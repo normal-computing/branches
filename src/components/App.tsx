@@ -57,6 +57,7 @@ import {
   CreateChatCompletionStreamResponseChoicesInner,
   ReactFlowNodeTypes,
 } from "../utils/types";
+import { NodeInfo } from "./NodeInfo";
 import { Prompt } from "./Prompt";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -895,7 +896,9 @@ function App() {
 
         if (!modelList.includes(settings.model)) {
           const oldModel = settings.model;
-          const newModel = modelList.includes(DEFAULT_SETTINGS.model) ? DEFAULT_SETTINGS.model : modelList[0];
+          const newModel = modelList.includes(DEFAULT_SETTINGS.model)
+            ? DEFAULT_SETTINGS.model
+            : modelList[0];
 
           setSettings((settings) => ({ ...settings, model: newModel }));
 
@@ -911,7 +914,7 @@ function App() {
   }, [apiKey]);
 
   const isAnythingSaving = isSavingReactFlow || isSavingSettings;
-  const isAnythingLoading = isAnythingSaving || (availableModels === null);
+  const isAnythingLoading = isAnythingSaving || availableModels === null;
 
   useBeforeunload((event: BeforeUnloadEvent) => {
     // Prevent leaving the page before saving.
@@ -1172,46 +1175,27 @@ function App() {
           </Resizable>
 
           <Box height="100%" width="100%" overflowY="scroll" p={4}>
-            {selectedNodeLineage.length >= 1 ? (
-              <Prompt
-                settings={settings}
-                setSettings={setSettings}
-                isGPT4={isGPT4}
-                selectNode={selectNode}
-                newConnectedToSelectedNode={newConnectedToSelectedNode}
-                lineage={selectedNodeLineage}
-                onType={(text: string) => {
-                  takeSnapshot();
-                  setNodes((nodes) =>
-                    modifyFluxNodeText(nodes, {
-                      asHuman: true,
-                      id: selectedNodeId!,
-                      text,
-                    })
-                  );
-                }}
-                submitPrompt={() => submitPrompt(false)}
-                apiKey={apiKey}
-              />
-            ) : (
-              <Column
-                expand
-                textAlign="center"
-                mainAxisAlignment={"center"}
-                crossAxisAlignment={"center"}
-              >
-                <BigButton
-                  tooltip={`⇧${modifierKeyText}P`}
-                  width="400px"
-                  height="100px"
-                  fontSize="xl"
-                  onClick={() => newUserNodeLinkedToANewSystemNode()}
-                  color={getFluxNodeTypeDarkColor(FluxNodeType.GPT)}
-                >
-                  Create a new conversation tree
-                </BigButton>
-              </Column>
-            )}
+            <NodeInfo
+              settings={settings}
+              setSettings={setSettings}
+              selectNode={selectNode}
+              isGPT4={isGPT4}
+              newConnectedToSelectedNode={newConnectedToSelectedNode}
+              lineage={selectedNodeLineage}
+              submitPrompt={submitPrompt}
+              onPromptType={(text: string) => {
+                takeSnapshot();
+                setNodes((nodes) =>
+                  modifyFluxNodeText(nodes, {
+                    asHuman: true,
+                    id: selectedNodeId!,
+                    text,
+                  })
+                );
+              }}
+              onCreateNewConversation={() => newUserNodeLinkedToANewSystemNode()}
+              apiKey={apiKey}
+            />
           </Box>
         </Row>
       </Column>

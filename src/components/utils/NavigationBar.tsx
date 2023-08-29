@@ -76,38 +76,8 @@ export function NavigationBar({
         width="auto"
       >
         <Text whiteSpace="nowrap">
-          <b>Flux</b> by
+          <b>Flux</b> <small>Tree of Thoughts</small>
         </Text>
-
-        <AvatarGroup ml="4px" size="sm">
-          <Avatar
-            bg="#ADADAD"
-            color="transparent"
-            name="Transmissions11"
-            src={t11s}
-            as={Link}
-            isExternal
-            href="https://twitter.com/transmissions11"
-          />
-          <Avatar
-            bg="#6B2E80"
-            color="transparent"
-            name="Dave White"
-            src={dave}
-            as={Link}
-            isExternal
-            href="https://twitter.com/_Dave__White_"
-          />
-          <Avatar
-            bg="white"
-            color="transparent"
-            name="Paradigm"
-            src={paradigm}
-            as={Link}
-            isExternal
-            href="https://twitter.com/paradigm"
-          />
-        </AvatarGroup>
 
         <Box mx="20px" height="100%" width="1px" bg="#EEEEEE" />
 

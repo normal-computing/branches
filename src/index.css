@@ -63,3 +63,8 @@ want bigger handles:
   border: 0px;
   border-radius: 6px;
 }
+
+.tab-panel-full-width {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
