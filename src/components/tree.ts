@@ -200,4 +200,14 @@ export const treeDemo = {
     y: 0,
     zoom: 1,
   }
-}
+};
+
+export const treeAnswerDemo = {
+  nodes: treeAnswerPathNodes.map(processNode),
+  edges: treeDemoEdges,
+  viewport: {
+    x: 0,
+    y: 0,
+    zoom: 1,
+  }
+};

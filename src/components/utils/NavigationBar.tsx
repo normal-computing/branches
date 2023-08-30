@@ -40,6 +40,7 @@ export function NavigationBar({
   moveToRightSibling,
   autoZoom,
   onOpenSettingsModal,
+  onToggleAnswerFilter,
 }: {
   newUserNodeLinkedToANewSystemNode: () => void;
   newConnectedToSelectedNode: (nodeType: FluxNodeType) => void;
@@ -58,6 +59,7 @@ export function NavigationBar({
   moveToRightSibling: () => void;
   autoZoom: () => void;
   onOpenSettingsModal: () => void;
+  onToggleAnswerFilter: () => void;
 }) {
   const modifierKeyText = getPlatformModifierKeyText();
 
@@ -202,6 +204,9 @@ export function NavigationBar({
             Navigate
           </MenuButton>
           <MenuList width="300px">
+              <MenuItem onClick={onToggleAnswerFilter}>
+                Toggle Anwser Filter
+              </MenuItem>
             <MenuGroup title="Parents/Children">
               <MenuItem command={`${modifierKeyText}↑`} onClick={moveToParent}>
                 Up to parent node

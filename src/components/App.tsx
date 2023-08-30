@@ -87,7 +87,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { yieldStream } from "yield-stream";
-import { treeDemo } from "./tree";
+import { treeDemo, treeAnswerDemo } from "./tree";
 
 function App() {
   const toast = useToast();
@@ -237,6 +237,8 @@ function App() {
     [reactFlow, nodes, edges]
   );
 
+  const [filterAnwser, setFilterAnswer] = useState<boolean>(false);
+
   // Auto restore on load.
   useEffect(() => {
     if (reactFlow) {
@@ -244,8 +246,7 @@ function App() {
       // const rawFlow = undefined;
 
       // const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
-      const flow: ReactFlowJsonObject = treeDemo;
-      console.log(flow);
+      const flow: ReactFlowJsonObject = filterAnwser ? treeAnswerDemo : treeDemo;
 
       // Get the content of the newTreeWith query param.
       const content = getQueryParam(NEW_TREE_CONTENT_QUERY_PARAM);
@@ -278,6 +279,24 @@ function App() {
       resetURL(); // Get rid of the query params.
     }
   }, [reactFlow]);
+
+  function toggleAnswerFilter() {
+    setFilterAnswer(!filterAnwser);
+    const flow: ReactFlowJsonObject = !filterAnwser ? treeAnswerDemo : treeDemo;
+    setEdges(flow.edges || []);
+    setViewport(flow.viewport);
+
+    const nodes = flow.nodes; // For brevity.
+
+    if (nodes.length > 0) {
+      // Either the first selected node we find, or the first node in the array.
+      const toSelect = nodes.find((node) => node.selected)?.id ?? nodes[0].id;
+
+      // Add the nodes to the React Flow array and select the node.
+      selectNode(toSelect, () => nodes);
+    }
+    autoZoomIfNecessary();
+  }
 
   /*//////////////////////////////////////////////////////////////
                           AI PROMPT CALLBACKS
@@ -1128,6 +1147,7 @@ function App() {
 
                     if (MIXPANEL_TOKEN) mixpanel.track("Opened Settings Modal"); // KPI
                   }}
+                  onToggleAnswerFilter={toggleAnswerFilter}
                 />
 
                 <Box ml="20px">
