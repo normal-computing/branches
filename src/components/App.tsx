@@ -87,6 +87,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { yieldStream } from "yield-stream";
+import { treeDemo } from "./tree";
 
 function App() {
   const toast = useToast();
@@ -240,13 +241,16 @@ function App() {
   useEffect(() => {
     if (reactFlow) {
       const rawFlow = localStorage.getItem(REACT_FLOW_LOCAL_STORAGE_KEY);
+      // const rawFlow = undefined;
 
-      const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
+      // const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
+      const flow: ReactFlowJsonObject = treeDemo;
+      console.log(flow);
 
       // Get the content of the newTreeWith query param.
       const content = getQueryParam(NEW_TREE_CONTENT_QUERY_PARAM);
 
-      if (flow) {
+      if (flow !== null) {
         setEdges(flow.edges || []);
         setViewport(flow.viewport);
 

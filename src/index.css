@@ -64,7 +64,19 @@ want bigger handles:
   border-radius: 6px;
 }
 
+.node-info h4 {
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+
 .tab-panel-full-width {
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+.eval-list li span {
+  margin-left: 1.5rem;
+}
+.eval-list li span:first-of-type {
+  margin-left: 0;
 }

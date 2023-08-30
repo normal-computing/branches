@@ -1,5 +1,27 @@
 import { Node, useReactFlow } from "reactflow";
-import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import {
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Badge,
+  Tag,
+  TagLeftIcon,
+  TagLabel,
+  List,
+  ListItem,
+  ListIcon,
+  Heading,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  StatGroup,
+} from "@chakra-ui/react";
+import { CheckIcon } from "@chakra-ui/icons";
+import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
 import { Column, Row } from "../utils/chakra";
 import { BigButton } from "./utils/BigButton";
 import {
@@ -11,8 +33,36 @@ import {
   ReactFlowNodeTypes,
 } from "../utils/types";
 import { Prompt } from "./Prompt";
+import { ToTNodeData } from "./tree";
 import { getPlatformModifierKey, getPlatformModifierKeyText } from "../utils/platform";
 import { getFluxNodeTypeColor, getFluxNodeTypeDarkColor } from "../utils/color";
+
+function EvalListItem({ item }: { item: string }) {
+  const lines = item.split("\n");
+  const lastLine = lines[lines.length - 1];
+  let icon = null;
+  if (lastLine === "sure") {
+    icon = <ListIcon as={MdCheck} color="green.500" />;
+  } else if (lastLine === "impossible") {
+    icon = <ListIcon as={MdClose} color="red.500" />;
+  } else if (lastLine === "likely") {
+    icon = <ListIcon as={MdQuestionMark} color="yellow.500" />;
+  }
+
+  return (
+    <ListItem>
+      {icon}
+      {lines.map((line, i) => {
+        return (
+          <span key={i}>
+            {line}
+            <br />
+          </span>
+        );
+      })}
+    </ListItem>
+  );
+}
 
 export function NodeInfo({
   lineage,
@@ -37,17 +87,67 @@ export function NodeInfo({
   onCreateNewConversation: () => void;
   onPromptType: (text: string) => void;
 }) {
+  const selectedNode =
+    lineage &&
+    (lineage.find((n) => n.selected === true) as Node<ToTNodeData> | undefined);
   return (
-    <Tabs>
+    <div className="node-info">
+      {/* <Tabs>
       <TabList>
         <Tab>Details</Tab>
         <Tab>Conversation</Tab>
       </TabList>
 
       <TabPanels>
-        <TabPanel className="tab-panel-full-width">
-          <p>TODO: add info</p>
-        </TabPanel>
+        <TabPanel className="tab-panel-full-width"> */}
+      {selectedNode?.data.isTerminal ? (
+        <Tag
+          size="lg"
+          variant="subtle"
+          colorScheme="purple"
+          style={{ marginRight: "0.5rem" }}
+        >
+          <TagLeftIcon boxSize="12px" as={MdThumbUpOffAlt} />
+          <TagLabel>Terminal</TagLabel>
+        </Tag>
+      ) : null}
+      {selectedNode?.data.isValid ? (
+        <Tag size="lg" variant="subtle" colorScheme="green">
+          <TagLeftIcon boxSize="12px" as={CheckIcon} />
+          <TagLabel>Valid</TagLabel>
+        </Tag>
+      ) : null}
+
+      <Heading as="h4" size="md">
+        Input
+      </Heading>
+      <p>{selectedNode?.data.input ?? ""}</p>
+      <Heading as="h4" size="md">
+        Score
+      </Heading>
+      <p>{selectedNode?.data.score ?? ""}</p>
+      {selectedNode?.data.output != "" && (
+        <>
+          <Heading as="h4" size="md">
+            Output
+          </Heading>
+          <p>{selectedNode?.data.output ?? ""}</p>
+        </>
+      )}
+      {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
+        <>
+          <Heading as="h4" size="md">
+            Evaluations
+          </Heading>
+          <List className="eval-list" spacing={3}>
+            {selectedNode?.data?.evals?.map((item, i) => {
+              return <EvalListItem key={i} item={item} />;
+            })}
+          </List>
+        </>
+      )}
+
+      {/* </TabPanel>
         <TabPanel className="tab-panel-full-width">
           {lineage && lineage.length >= 1 ? (
             <Prompt
@@ -82,6 +182,7 @@ export function NodeInfo({
           )}
         </TabPanel>
       </TabPanels>
-    </Tabs>
+    </Tabs> */}
+    </div>
   );
 }
