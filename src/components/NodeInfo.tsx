@@ -92,14 +92,14 @@ export function NodeInfo({
     (lineage.find((n) => n.selected === true) as Node<ToTNodeData> | undefined);
   return (
     <div className="node-info">
-      {/* <Tabs>
+      <Tabs>
       <TabList>
         <Tab>Details</Tab>
         <Tab>Conversation</Tab>
       </TabList>
 
       <TabPanels>
-        <TabPanel className="tab-panel-full-width"> */}
+        <TabPanel className="tab-panel-full-width">
       {selectedNode?.data.isTerminal ? (
         <Tag
           size="lg"
@@ -134,6 +134,18 @@ export function NodeInfo({
           <p>{selectedNode?.data.output ?? ""}</p>
         </>
       )}
+      {selectedNode?.data?.steps && selectedNode?.data?.steps.length > 0 && (
+        <>
+          <Heading as="h4" size="md">
+            Steps
+          </Heading>
+          <List className="eval-list" spacing={3}>
+            {selectedNode?.data?.steps?.map((item, i) => {
+              return <ListItem key={i}>{item}</ListItem>;
+            })}
+          </List>
+        </>
+      )}
       {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
         <>
           <Heading as="h4" size="md">
@@ -147,7 +159,7 @@ export function NodeInfo({
         </>
       )}
 
-      {/* </TabPanel>
+      </TabPanel>
         <TabPanel className="tab-panel-full-width">
           {lineage && lineage.length >= 1 ? (
             <Prompt
@@ -182,7 +194,7 @@ export function NodeInfo({
           )}
         </TabPanel>
       </TabPanels>
-    </Tabs> */}
+    </Tabs>
     </div>
   );
 }

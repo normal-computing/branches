@@ -12,6 +12,7 @@ export type ToTNodeData = FluxNodeData & {
   input: string;
   output: string;
   score: number;
+  steps: string[];
   evals: string[];
   isTerminal: boolean;
   isValid: boolean;
@@ -165,12 +166,13 @@ function processNode(node: Node): Node<ToTNodeData> {
   if (data.fluxNodeType == null) {
     data.fluxNodeType = FluxNodeType.GPT;
   }
-  if (data.text == null) {
-    data.text = '';
-  }
+  // if (data.text == null) {
+  //   data.text = '';
+  // }
   if (!Array.isArray(data.evals)) {
     data.evals = [];
   }
+  data.text = data.steps.join('\n') + '\n' + data.evals.join('\n') + '\n'  + data.label;
   let color = "#f7d0a1";
   if (data.isValid) {
     color = "#d9f3d6"
