@@ -35,8 +35,6 @@ import {
   getFluxNodeParent,
   getFluxNodeSiblings,
   markOnlyNodeAsSelected,
-  deleteFluxNode,
-  deleteSelectedFluxNodes,
   addUserNodeLinkedToASystemNode,
   getConnectionAllowed,
   setFluxNodeStreamId,
@@ -724,39 +722,6 @@ function App() {
     }
   };
 
-  const deleteSelectedNodes = () => {
-    takeSnapshot();
-
-    const selectedNodes = nodes.filter((node) => node.selected);
-
-    if (
-      selectedNodeId && // There's a selected node under the hood.
-      (selectedNodes.length === 0 || // There are no selected nodes.
-        // There is only one selected node, and it's the selected node.
-        (selectedNodes.length === 1 && selectedNodes[0].id === selectedNodeId))
-    ) {
-      // Try to move to sibling first.
-      const hasSibling = moveToRightSibling();
-
-      // If there's no sibling, move to parent.
-      if (!hasSibling) moveToParent();
-
-      setNodes((nodes) => deleteFluxNode(nodes, selectedNodeId));
-    } else {
-      setNodes(deleteSelectedFluxNodes);
-
-      // If any of the selected nodes are the selected node, unselect it.
-      if (selectedNodeId && selectedNodes.some((node) => node.id === selectedNodeId)) {
-        setLastSelectedNodeId(null);
-        setSelectedNodeId(null);
-      }
-    }
-
-    autoZoomIfNecessary();
-
-    if (MIXPANEL_TOKEN) mixpanel.track("Deleted selected node(s)");
-  };
-
   const onClear = () => {
     if (confirm("Are you sure you want to delete all nodes?")) {
       takeSnapshot();
@@ -1077,7 +1042,6 @@ function App() {
                     newUserNodeLinkedToANewSystemNode()
                   }
                   newConnectedToSelectedNode={newConnectedToSelectedNode}
-                  deleteSelectedNodes={deleteSelectedNodes}
                   submitPrompt={() => submitPrompt(false)}
                   regenerate={() => submitPrompt(true)}
                   completeNextWords={completeNextWords}
@@ -1117,8 +1081,6 @@ function App() {
                 onInit={setReactFlow}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
-                onEdgesDelete={takeSnapshot}
-                onNodesDelete={takeSnapshot}
                 onEdgeUpdateStart={onEdgeUpdateStart}
                 onEdgeUpdate={onEdgeUpdate}
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
