@@ -1,14 +1,12 @@
 import { MIXPANEL_TOKEN } from "../main";
 import { isValidAPIKey } from "../utils/apikey";
 import { Column, Row } from "../utils/chakra";
-import { copySnippetToClipboard } from "../utils/clipboard";
-import { getFluxNodeTypeColor, getFluxNodeTypeDarkColor } from "../utils/color";
+import { getFluxNodeTypeColor } from "../utils/color";
 import { getPlatformModifierKey, getPlatformModifierKeyText } from "../utils/platform";
 import {
   API_KEY_LOCAL_STORAGE_KEY,
   DEFAULT_SETTINGS,
   FIT_VIEW_SETTINGS,
-  MAX_HISTORY_SIZE,
   MODEL_SETTINGS_LOCAL_STORAGE_KEY,
   NEW_TREE_CONTENT_QUERY_PARAM,
   OVERLAP_RANDOMNESS_MAX,
@@ -30,40 +28,32 @@ import {
   getFluxNodeLineage,
   addFluxNode,
   modifyFluxNodeText,
-  modifyReactFlowNodeProperties,
   getFluxNodeChildren,
-  getFluxNodeParent,
-  getFluxNodeSiblings,
   markOnlyNodeAsSelected,
   addUserNodeLinkedToASystemNode,
   getConnectionAllowed,
   setFluxNodeStreamId,
 } from "../utils/fluxNode";
 import { useLocalStorage } from "../utils/lstore";
-import { mod } from "../utils/mod";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
-import { messagesFromLineage, promptFromLineage } from "../utils/prompt";
+import { messagesFromLineage } from "../utils/prompt";
 import { getQueryParam, resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
 import {
   FluxNodeData,
   FluxNodeType,
-  HistoryItem,
   Settings,
   CreateChatCompletionStreamResponseChoicesInner,
-  ReactFlowNodeTypes,
 } from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
-import { Prompt } from "./Prompt";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
-import { BigButton } from "./utils/BigButton";
 import { NavigationBar } from "./utils/NavigationBar";
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { Box, useDisclosure, Spinner, useToast } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
-import { CreateCompletionResponseChoicesInner, OpenAI } from "openai-streams";
+import { OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
@@ -88,67 +78,6 @@ import { treeDemo, treeAnswerDemo } from "./tree";
 
 function App() {
   const toast = useToast();
-
-  /*//////////////////////////////////////////////////////////////
-                          UNDO REDO LOGIC
-  //////////////////////////////////////////////////////////////*/
-
-  const [past, setPast] = useState<HistoryItem[]>([]);
-  const [future, setFuture] = useState<HistoryItem[]>([]);
-
-  const takeSnapshot = () => {
-    // Push the current graph to the past state.
-    setPast((past) => [
-      ...past.slice(past.length - MAX_HISTORY_SIZE + 1, past.length),
-      { nodes, edges, selectedNodeId, lastSelectedNodeId },
-    ]);
-
-    // Whenever we take a new snapshot, the redo operations
-    // need to be cleared to avoid state mismatches.
-    setFuture([]);
-  };
-
-  const undo = () => {
-    // get the last state that we want to go back to
-    const pastState = past[past.length - 1];
-
-    if (pastState) {
-      // First we remove the state from the history.
-      setPast((past) => past.slice(0, past.length - 1));
-      // We store the current graph for the redo operation.
-      setFuture((future) => [
-        ...future,
-        { nodes, edges, selectedNodeId, lastSelectedNodeId },
-      ]);
-
-      // Now we can set the graph to the past state.
-      setNodes(pastState.nodes);
-      setEdges(pastState.edges);
-      setLastSelectedNodeId(pastState.lastSelectedNodeId);
-      setSelectedNodeId(pastState.selectedNodeId);
-
-      autoZoomIfNecessary();
-    }
-
-    if (MIXPANEL_TOKEN) mixpanel.track("Performed undo");
-  };
-
-  const redo = () => {
-    const futureState = future[future.length - 1];
-
-    if (futureState) {
-      setFuture((future) => future.slice(0, future.length - 1));
-      setPast((past) => [...past, { nodes, edges, selectedNodeId, lastSelectedNodeId }]);
-      setNodes(futureState.nodes);
-      setEdges(futureState.edges);
-      setLastSelectedNodeId(futureState.lastSelectedNodeId);
-      setSelectedNodeId(futureState.selectedNodeId);
-
-      autoZoomIfNecessary();
-    }
-
-    if (MIXPANEL_TOKEN) mixpanel.track("Performed redo");
-  };
 
   /*//////////////////////////////////////////////////////////////
                         CORE REACT FLOW LOGIC
@@ -176,8 +105,6 @@ function App() {
     )
       return;
 
-    takeSnapshot();
-
     edgeUpdateSuccessful.current = true;
 
     setEdges((edges) => updateEdge(oldEdge, newConnection, edges));
@@ -185,8 +112,6 @@ function App() {
 
   const onEdgeUpdateEnd = (_: unknown, edge: Edge<any>) => {
     if (!edgeUpdateSuccessful.current) {
-      takeSnapshot();
-
       setEdges((edges) => edges.filter((e) => e.id !== edge.id));
     }
 
@@ -202,7 +127,6 @@ function App() {
     )
       return;
 
-    takeSnapshot();
     setEdges((eds) => addEdge({ ...connection }, eds));
   };
 
@@ -210,12 +134,6 @@ function App() {
 
   const autoZoomIfNecessary = () => {
     if (settings.autoZoom) autoZoom();
-  };
-
-  const trackedAutoZoom = () => {
-    autoZoom();
-
-    if (MIXPANEL_TOKEN) mixpanel.track("Zoomed out and centered");
   };
 
   const save = () => {
@@ -239,7 +157,6 @@ function App() {
   // Auto restore on load.
   useEffect(() => {
     if (reactFlow) {
-      const rawFlow = localStorage.getItem(REACT_FLOW_LOCAL_STORAGE_KEY);
       // const rawFlow = undefined;
 
       // const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
@@ -277,24 +194,6 @@ function App() {
     }
   }, [reactFlow]);
 
-  function toggleAnswerFilter() {
-    setFilterAnswer(!filterAnwser);
-    const flow: ReactFlowJsonObject = !filterAnwser ? treeAnswerDemo : treeDemo;
-    setEdges(flow.edges || []);
-    setViewport(flow.viewport);
-
-    const nodes = flow.nodes; // For brevity.
-
-    if (nodes.length > 0) {
-      // Either the first selected node we find, or the first node in the array.
-      const toSelect = nodes.find((node) => node.selected)?.id ?? nodes[0].id;
-
-      // Add the nodes to the React Flow array and select the node.
-      selectNode(toSelect, () => nodes);
-    }
-    autoZoomIfNecessary();
-  }
-
   /*//////////////////////////////////////////////////////////////
                           AI PROMPT CALLBACKS
   //////////////////////////////////////////////////////////////*/
@@ -302,8 +201,6 @@ function App() {
   // Takes a prompt, submits it to the GPT API with n responses,
   // then creates a child node for each response under the selected node.
   const submitPrompt = async (overrideExistingIfPossible: boolean) => {
-    takeSnapshot();
-
     const responses = settings.n;
     const temp = settings.temp;
     const model = settings.model;
@@ -548,87 +445,6 @@ function App() {
     if (MIXPANEL_TOKEN) mixpanel.track("Submitted Prompt"); // KPI
   };
 
-  const completeNextWords = () => {
-    takeSnapshot();
-
-    const temp = settings.temp;
-
-    const lineage = selectedNodeLineage;
-    const selectedNodeId = lineage[0].id;
-
-    const streamId = generateStreamId();
-
-    // Set the node's streamId so it will accept the incoming text.
-    setNodes((nodes) => setFluxNodeStreamId(nodes, { id: selectedNodeId, streamId }));
-
-    (async () => {
-      // TODO: Stop sequences for user/assistant/etc?
-      // TODO: Select between instruction and auto raw base models?
-      const stream = await OpenAI(
-        "completions",
-        {
-          // TODO: Allow customizing.
-          model: "text-davinci-003",
-          temperature: temp,
-          prompt: promptFromLineage(lineage, settings),
-          max_tokens: 250,
-          stop: ["\n\n", "assistant:", "user:"],
-        },
-        { apiKey: apiKey!, mode: "raw" }
-      );
-
-      const DECODER = new TextDecoder();
-
-      const abortController = new AbortController();
-
-      for await (const chunk of yieldStream(stream, abortController)) {
-        if (abortController.signal.aborted) break;
-
-        try {
-          const decoded = JSON.parse(DECODER.decode(chunk));
-
-          if (decoded.choices === undefined)
-            throw new Error(
-              "No choices in response. Decoded response: " + JSON.stringify(decoded)
-            );
-
-          const choice: CreateCompletionResponseChoicesInner = decoded.choices[0];
-
-          setNodes((newerNodes) => {
-            try {
-              return appendTextToFluxNodeAsGPT(newerNodes, {
-                id: selectedNodeId,
-                text: choice.text ?? UNDEFINED_RESPONSE_STRING,
-                streamId, // This will cause a throw if the streamId has changed.
-              });
-            } catch (e: any) {
-              // If the stream id does not match,
-              // it is stale and we should abort.
-              abortController.abort(e.message);
-
-              return newerNodes;
-            }
-          });
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      // If the stream wasn't aborted or was aborted due to a cancelation.
-      if (
-        !abortController.signal.aborted ||
-        abortController.signal.reason === STREAM_CANCELED_ERROR_MESSAGE
-      ) {
-        // Reset the stream id.
-        setNodes((nodes) =>
-          setFluxNodeStreamId(nodes, { id: selectedNodeId, streamId: undefined })
-        );
-      }
-    })().catch((err) => console.error(err));
-
-    if (MIXPANEL_TOKEN) mixpanel.track("Completed next words");
-  };
-
   /*//////////////////////////////////////////////////////////////
                           SELECTED NODE LOGIC
   //////////////////////////////////////////////////////////////*/
@@ -647,8 +463,6 @@ function App() {
     text: string | null = "",
     forceAutoZoom: boolean = true
   ) => {
-    takeSnapshot();
-
     const systemId = generateNodeId();
     const userId = generateNodeId();
 
@@ -679,8 +493,6 @@ function App() {
     const selectedNode = getFluxNode(nodes, selectedNodeId!);
 
     if (selectedNode) {
-      takeSnapshot();
-
       const selectedNodeChildren = getFluxNodeChildren(nodes, edges, selectedNodeId!);
 
       const id = generateNodeId();
@@ -722,18 +534,6 @@ function App() {
     }
   };
 
-  const onClear = () => {
-    if (confirm("Are you sure you want to delete all nodes?")) {
-      takeSnapshot();
-
-      setNodes([]);
-      setEdges([]);
-      setViewport({ x: 0, y: 0, zoom: 1 });
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Deleted everything");
-    }
-  };
-
   /*//////////////////////////////////////////////////////////////
                       NODE SELECTION CALLBACKS
   //////////////////////////////////////////////////////////////*/
@@ -750,71 +550,6 @@ function App() {
     );
   };
 
-  const moveToChild = () => {
-    const children = getFluxNodeChildren(nodes, edges, selectedNodeId!);
-
-    if (children.length > 0) {
-      selectNode(
-        lastSelectedNodeId !== null &&
-          children.some((node) => node.id == lastSelectedNodeId)
-          ? lastSelectedNodeId
-          : children[0].id
-      );
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Moved to child node");
-
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  const moveToParent = () => {
-    const parent = getFluxNodeParent(nodes, edges, selectedNodeId!);
-
-    if (parent) {
-      selectNode(parent.id);
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Moved to parent node");
-
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  const moveToLeftSibling = () => {
-    const siblings = getFluxNodeSiblings(nodes, edges, selectedNodeId!);
-
-    if (siblings.length > 1) {
-      const currentIndex = siblings.findIndex((node) => node.id == selectedNodeId!)!;
-
-      selectNode(siblings[mod(currentIndex - 1, siblings.length)].id);
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Moved to left sibling node");
-
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  const moveToRightSibling = () => {
-    const siblings = getFluxNodeSiblings(nodes, edges, selectedNodeId!);
-
-    if (siblings.length > 1) {
-      const currentIndex = siblings.findIndex((node) => node.id == selectedNodeId!)!;
-
-      selectNode(siblings[mod(currentIndex + 1, siblings.length)].id);
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Moved to right sibling node");
-
-      return true;
-    } else {
-      return false;
-    }
-  };
-
   /*//////////////////////////////////////////////////////////////
                          SETTINGS MODAL LOGIC
   //////////////////////////////////////////////////////////////*/
@@ -823,7 +558,6 @@ function App() {
     isOpen: isSettingsModalOpen,
     onOpen: onOpenSettingsModal,
     onClose: onCloseSettingsModal,
-    onToggle: onToggleSettingsModal,
   } = useDisclosure();
 
   const [settings, setSettings] = useState<Settings>(() => {
@@ -912,49 +646,6 @@ function App() {
                         COPY MESSAGES LOGIC
   //////////////////////////////////////////////////////////////*/
 
-  const copyMessagesToClipboard = async () => {
-    const messages = promptFromLineage(selectedNodeLineage, settings);
-
-    if (await copySnippetToClipboard(messages)) {
-      toast({
-        title: "Copied messages to clipboard!",
-        status: "success",
-        ...TOAST_CONFIG,
-      });
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Copied messages to clipboard");
-    } else {
-      toast({
-        title: "Failed to copy messages to clipboard!",
-        status: "error",
-        ...TOAST_CONFIG,
-      });
-    }
-  };
-
-  /*//////////////////////////////////////////////////////////////
-                         RENAME NODE LOGIC
-  //////////////////////////////////////////////////////////////*/
-
-  const showRenameInput = () => {
-    const selectedNode = nodes.find((node) => node.selected);
-    const nodeId = selectedNode?.id ?? selectedNodeId;
-
-    if (nodeId) {
-      takeSnapshot();
-
-      setNodes((nodes) =>
-        modifyReactFlowNodeProperties(nodes, {
-          id: nodeId,
-          type: ReactFlowNodeTypes.LabelUpdater,
-          draggable: false,
-        })
-      );
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Triggered rename input");
-    }
-  };
-
   /*//////////////////////////////////////////////////////////////
                         WINDOW RESIZE LOGIC
   //////////////////////////////////////////////////////////////*/
@@ -1038,29 +729,11 @@ function App() {
                 borderBottomWidth="1px"
               >
                 <NavigationBar
-                  newUserNodeLinkedToANewSystemNode={() =>
-                    newUserNodeLinkedToANewSystemNode()
-                  }
-                  newConnectedToSelectedNode={newConnectedToSelectedNode}
-                  submitPrompt={() => submitPrompt(false)}
-                  regenerate={() => submitPrompt(true)}
-                  completeNextWords={completeNextWords}
-                  undo={undo}
-                  redo={redo}
-                  onClear={onClear}
-                  copyMessagesToClipboard={copyMessagesToClipboard}
-                  showRenameInput={showRenameInput}
-                  moveToParent={moveToParent}
-                  moveToChild={moveToChild}
-                  moveToLeftSibling={moveToLeftSibling}
-                  moveToRightSibling={moveToRightSibling}
-                  autoZoom={trackedAutoZoom}
                   onOpenSettingsModal={() => {
                     onOpenSettingsModal();
 
                     if (MIXPANEL_TOKEN) mixpanel.track("Opened Settings Modal"); // KPI
                   }}
-                  onToggleAnswerFilter={toggleAnswerFilter}
                 />
 
                 <Box ml="20px">
@@ -1119,7 +792,6 @@ function App() {
               lineage={selectedNodeLineage}
               submitPrompt={submitPrompt}
               onPromptType={(text: string) => {
-                takeSnapshot();
                 setNodes((nodes) =>
                   modifyFluxNodeText(nodes, {
                     asHuman: true,
