@@ -8,7 +8,6 @@ import {
   API_KEY_LOCAL_STORAGE_KEY,
   DEFAULT_SETTINGS,
   FIT_VIEW_SETTINGS,
-  HOTKEY_CONFIG,
   MAX_HISTORY_SIZE,
   MODEL_SETTINGS_LOCAL_STORAGE_KEY,
   NEW_TREE_CONTENT_QUERY_PARAM,
@@ -70,7 +69,7 @@ import { CreateCompletionResponseChoicesInner, OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
-import { useHotkeys } from "react-hotkeys-hook";
+
 import ReactFlow, {
   addEdge,
   Background,
@@ -1005,58 +1004,8 @@ function App() {
     SAVED_CHAT_SIZE_LOCAL_STORAGE_KEY
   );
 
-  /*//////////////////////////////////////////////////////////////
-                          HOTKEYS LOGIC
-  //////////////////////////////////////////////////////////////*/
-
   const modifierKey = getPlatformModifierKey();
   const modifierKeyText = getPlatformModifierKeyText();
-
-  useHotkeys(`${modifierKey}+s`, save, HOTKEY_CONFIG);
-
-  useHotkeys(
-    `${modifierKey}+p`,
-    () => newConnectedToSelectedNode(FluxNodeType.User),
-    HOTKEY_CONFIG
-  );
-  useHotkeys(
-    `${modifierKey}+u`,
-    () => newConnectedToSelectedNode(FluxNodeType.System),
-    HOTKEY_CONFIG
-  );
-
-  useHotkeys(
-    `${modifierKey}+shift+p`,
-    () => newUserNodeLinkedToANewSystemNode(),
-    HOTKEY_CONFIG
-  );
-
-  useHotkeys(`${modifierKey}+.`, trackedAutoZoom, HOTKEY_CONFIG);
-  useHotkeys(
-    `${modifierKey}+/`,
-    () => {
-      onToggleSettingsModal();
-
-      if (MIXPANEL_TOKEN) mixpanel.track("Toggled settings modal");
-    },
-    HOTKEY_CONFIG
-  );
-  useHotkeys(`${modifierKey}+shift+backspace`, onClear, HOTKEY_CONFIG);
-
-  useHotkeys(`${modifierKey}+z`, undo, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+shift+z`, redo, HOTKEY_CONFIG);
-
-  useHotkeys(`${modifierKey}+e`, showRenameInput, HOTKEY_CONFIG);
-
-  useHotkeys(`${modifierKey}+up`, moveToParent, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+down`, moveToChild, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+left`, moveToLeftSibling, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+right`, moveToRightSibling, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+return`, () => submitPrompt(false), HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+shift+return`, () => submitPrompt(true), HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+k`, completeNextWords, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+backspace`, deleteSelectedNodes, HOTKEY_CONFIG);
-  useHotkeys(`${modifierKey}+shift+c`, copyMessagesToClipboard, HOTKEY_CONFIG);
 
   /*//////////////////////////////////////////////////////////////
                               APP
