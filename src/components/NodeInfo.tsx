@@ -57,7 +57,6 @@ export function NodeInfo({
   isGPT4,
   selectNode,
   submitPrompt,
-  newConnectedToSelectedNode,
   apiKey,
   onCreateNewConversation,
   onPromptType,
@@ -66,7 +65,7 @@ export function NodeInfo({
   settings: Settings;
   setSettings: (settings: Settings) => void;
   isGPT4: boolean;
-  submitPrompt: (p: boolean) => Promise<void>;
+  submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;
   newConnectedToSelectedNode: (type: FluxNodeType) => void;
   apiKey: string | null;
@@ -152,10 +151,9 @@ export function NodeInfo({
                 setSettings={setSettings}
                 isGPT4={isGPT4}
                 selectNode={selectNode}
-                newConnectedToSelectedNode={newConnectedToSelectedNode}
                 lineage={lineage}
                 onType={onPromptType}
-                submitPrompt={() => submitPrompt(false)}
+                submitPrompt={submitPrompt}
                 apiKey={apiKey}
               />
             ) : (
