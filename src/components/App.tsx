@@ -1,8 +1,6 @@
 import { MIXPANEL_TOKEN } from "../main";
 import { isValidAPIKey } from "../utils/apikey";
 import { Column, Row } from "../utils/chakra";
-import { getFluxNodeTypeColor } from "../utils/color";
-import { getPlatformModifierKey, getPlatformModifierKeyText } from "../utils/platform";
 import {
   API_KEY_LOCAL_STORAGE_KEY,
   DEFAULT_SETTINGS,
@@ -22,7 +20,6 @@ import { newFluxEdge, modifyFluxEdge, addFluxEdge } from "../utils/fluxEdge";
 import {
   getFluxNode,
   getFluxNodeGPTChildren,
-  displayNameFromFluxNodeType,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
   getFluxNodeLineage,
@@ -200,7 +197,7 @@ function App() {
 
   // Takes a prompt, submits it to the GPT API with n responses,
   // then creates a child node for each response under the selected node.
-  const submitPrompt = async (overrideExistingIfPossible: boolean) => {
+  const submitPrompt = async () => {
     const responses = settings.n;
     const temp = settings.temp;
     const model = settings.model;
@@ -217,64 +214,39 @@ function App() {
 
     let firstCompletionId: string | undefined;
 
-    // Update newNodes, adding new child nodes as
-    // needed, re-using existing ones wherever possible if overrideExistingIfPossible is set.
+    // Update newNodes, adding new child nodes as needed
     for (let i = 0; i < responses; i++) {
-      // If we have enough children, and overrideExistingIfPossible is true, we'll just re-use one.
-      if (overrideExistingIfPossible && i < currentNodeChildren.length) {
-        const childNode = currentNodeChildren[i];
+      const id = generateNodeId();
 
-        if (i === 0) firstCompletionId = childNode.id;
+      if (i === 0) firstCompletionId = id;
 
-        const idx = newNodes.findIndex((node) => node.id === childNode.id);
-
-        newNodes[idx] = {
-          ...childNode,
-          data: {
-            ...childNode.data,
-            text: "",
-            label: childNode.data.label ?? displayNameFromFluxNodeType(FluxNodeType.GPT),
-            fluxNodeType: FluxNodeType.GPT,
-            streamId,
-          },
-          style: {
-            ...childNode.style,
-            background: getFluxNodeTypeColor(FluxNodeType.GPT),
-          },
-        };
-      } else {
-        const id = generateNodeId();
-
-        if (i === 0) firstCompletionId = id;
-
-        // Otherwise, we'll create a new node.
-        newNodes.push(
-          newFluxNode({
-            id,
-            // Position it 50px below the current node, offset
-            // horizontally according to the number of responses
-            // such that the middle response is right below the current node.
-            // Note that node x y coords are the top left corner of the node,
-            // so we need to offset by at the width of the node (150px).
-            x:
-              (currentNodeChildren.length > 0
-                ? // If there are already children we want to put the
-                  // next child to the right of the furthest right one.
-                  currentNodeChildren.reduce((prev, current) =>
-                    prev.position.x > current.position.x ? prev : current
-                  ).position.x +
-                  (responses / 2) * 180 +
-                  90
-                : currentNode.position.x) +
-              (i - (responses - 1) / 2) * 180,
-            // Add OVERLAP_RANDOMNESS_MAX of randomness to the y position so that nodes don't overlap.
-            y: currentNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
-            fluxNodeType: FluxNodeType.GPT,
-            text: "",
-            streamId,
-          })
-        );
-      }
+      // Otherwise, we'll create a new node.
+      newNodes.push(
+        newFluxNode({
+          id,
+          // Position it 50px below the current node, offset
+          // horizontally according to the number of responses
+          // such that the middle response is right below the current node.
+          // Note that node x y coords are the top left corner of the node,
+          // so we need to offset by at the width of the node (150px).
+          x:
+            (currentNodeChildren.length > 0
+              ? // If there are already children we want to put the
+                // next child to the right of the furthest right one.
+                currentNodeChildren.reduce((prev, current) =>
+                  prev.position.x > current.position.x ? prev : current
+                ).position.x +
+                (responses / 2) * 180 +
+                90
+              : currentNode.position.x) +
+            (i - (responses - 1) / 2) * 180,
+          // Add OVERLAP_RANDOMNESS_MAX of randomness to the y position so that nodes don't overlap.
+          y: currentNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
+          fluxNodeType: FluxNodeType.GPT,
+          text: "",
+          streamId,
+        })
+      );
     }
 
     if (firstCompletionId === undefined) throw new Error("No first completion id!");
@@ -315,10 +287,7 @@ function App() {
             );
 
           const correspondingNodeId =
-            // If we re-used a node we have to pull it from children array.
-            overrideExistingIfPossible && choice.index < currentNodeChildren.length
-              ? currentNodeChildren[choice.index].id
-              : newNodes[newNodes.length - responses + choice.index].id;
+            newNodes[newNodes.length - responses + choice.index].id;
 
           // The ChatGPT API will start by returning a
           // choice with only a role delta and no content.
@@ -372,10 +341,7 @@ function App() {
       ) {
         // Mark all the edges as no longer animated.
         for (let i = 0; i < responses; i++) {
-          const correspondingNodeId =
-            overrideExistingIfPossible && i < currentNodeChildren.length
-              ? currentNodeChildren[i].id
-              : newNodes[newNodes.length - responses + i].id;
+          const correspondingNodeId = newNodes[newNodes.length - responses + i].id;
 
           // Reset the stream id.
           setNodes((nodes) =>
@@ -401,7 +367,6 @@ function App() {
 
     setNodes(markOnlyNodeAsSelected(newNodes, firstCompletionId!));
 
-    setLastSelectedNodeId(selectedNodeId);
     setSelectedNodeId(firstCompletionId);
 
     setEdges((edges) => {
@@ -410,31 +375,18 @@ function App() {
       for (let i = 0; i < responses; i++) {
         // Update the links between
         // re-used nodes if necessary.
-        if (overrideExistingIfPossible && i < currentNodeChildren.length) {
-          const childId = currentNodeChildren[i].id;
+        // The new nodes are added to the end of the array, so we need to
+        // subtract responses from and add i to length of the array to access.
+        const childId = newNodes[newNodes.length - responses + i].id;
 
-          const idx = newEdges.findIndex(
-            (edge) => edge.source === parentNode.id && edge.target === childId
-          );
-
-          newEdges[idx] = {
-            ...newEdges[idx],
+        // Otherwise, add a new edge.
+        newEdges.push(
+          newFluxEdge({
+            source: parentNode.id,
+            target: childId,
             animated: true,
-          };
-        } else {
-          // The new nodes are added to the end of the array, so we need to
-          // subtract responses from and add i to length of the array to access.
-          const childId = newNodes[newNodes.length - responses + i].id;
-
-          // Otherwise, add a new edge.
-          newEdges.push(
-            newFluxEdge({
-              source: parentNode.id,
-              target: childId,
-              animated: true,
-            })
-          );
-        }
+          })
+        );
       }
 
       return newEdges;
@@ -450,7 +402,6 @@ function App() {
   //////////////////////////////////////////////////////////////*/
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
 
   const selectedNodeLineage =
     selectedNodeId !== null ? getFluxNodeLineage(nodes, edges, selectedNodeId) : [];
@@ -542,7 +493,6 @@ function App() {
     id: string,
     computeNewNodes?: (currNodes: Node<FluxNodeData>[]) => Node<FluxNodeData>[]
   ) => {
-    setLastSelectedNodeId(selectedNodeId);
     setSelectedNodeId(id);
     setNodes((currNodes) =>
       // If we were passed a computeNewNodes function, use it, otherwise just use the current nodes.
@@ -643,10 +593,6 @@ function App() {
   });
 
   /*//////////////////////////////////////////////////////////////
-                        COPY MESSAGES LOGIC
-  //////////////////////////////////////////////////////////////*/
-
-  /*//////////////////////////////////////////////////////////////
                         WINDOW RESIZE LOGIC
   //////////////////////////////////////////////////////////////*/
 
@@ -659,9 +605,6 @@ function App() {
   const [savedChatSize, setSavedChatSize] = useLocalStorage<string>(
     SAVED_CHAT_SIZE_LOCAL_STORAGE_KEY
   );
-
-  const modifierKey = getPlatformModifierKey();
-  const modifierKeyText = getPlatformModifierKeyText();
 
   /*//////////////////////////////////////////////////////////////
                               APP
@@ -773,7 +716,6 @@ function App() {
                 panOnScroll={true}
                 selectionMode={SelectionMode.Partial}
                 onNodeClick={(_, node) => {
-                  setLastSelectedNodeId(selectedNodeId);
                   setSelectedNodeId(node.id);
                 }}
               >
