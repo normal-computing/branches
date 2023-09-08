@@ -3,6 +3,9 @@ import { Node, Edge } from "reactflow";
 import { ChatCompletionResponseMessage } from "openai-streams";
 
 export type FluxNodeData = {
+  input: string;
+  steps: string[];
+  output: string;
   label: string;
   fluxNodeType: FluxNodeType;
   text: string;
