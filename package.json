@@ -2,7 +2,6 @@
   "name": "flux",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -15,7 +14,10 @@
     "@emotion/styled": "^11.10.6",
     "framer-motion": "^9.0.4",
     "highlightjs-solidity": "^2.0.6",
+    "mathjs": "^11.11.0",
     "mixpanel-browser": "^2.46.0",
+    "nunjucks": "^3.2.4",
+    "openai": "^4.5.0",
     "openai-streams": "^4.2.0",
     "re-resizable": "^6.9.9",
     "react": "^18.2.0",
