@@ -37,7 +37,7 @@ export function newFluxNode({
       background: getFluxNodeTypeColor(fluxNodeType),
     },
     data: {
-      label: displayNameFromFluxNodeType(fluxNodeType),
+      label: text,
       fluxNodeType,
       text,
       streamId,
@@ -208,7 +208,7 @@ export function appendTextToFluxNodeAsGPT(
 
     const isFirstToken = copy.data.text.length === 0;
 
-    copy.data.text += text;
+    copy.data.text = text;
 
     // Preserve custom labels
     if (copy.data.hasCustomlabel) return copy;

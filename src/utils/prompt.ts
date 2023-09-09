@@ -4,13 +4,12 @@ import { MAX_AUTOLABEL_CHARS } from "./constants";
 import { Node } from "reactflow";
 import * as nunjucks from "nunjucks";
 
-export function messagesFromLineage(
-  lineage: Node<FluxNodeData>[],
+export function messageFromNode(
+  currNode: Node<FluxNodeData>,
   settings: Settings
 ): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];
 
-  const currNode = lineage[0];
   console.log(currNode.data.input);
   console.log(currNode.data.output);
   console.log(currNode.data.steps);
@@ -104,7 +103,7 @@ function removeInvalidChars(text: string) {
   // a-zA-Z0-9: letters and numbers
   // .,?!: common punctuation marks
   // \s: whitespace characters (space, tab, newline, etc.)
-  const regex = /[^a-zA-Z0-9.,'?!-\s]+/g;
+  const regex = /[^a-zA-Z0-9.,'?!-\s+=*\/<>():]+/g;
 
   // Replace `\n` with spaces and remove invalid characters
   const cleanedStr = text.replaceAll("\n", " ").replace(regex, "");

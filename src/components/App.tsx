@@ -11,15 +11,12 @@ import {
   REACT_FLOW_NODE_TYPES,
   REACT_FLOW_LOCAL_STORAGE_KEY,
   TOAST_CONFIG,
-  UNDEFINED_RESPONSE_STRING,
-  STREAM_CANCELED_ERROR_MESSAGE,
   SAVED_CHAT_SIZE_LOCAL_STORAGE_KEY,
 } from "../utils/constants";
 import { useDebouncedEffect } from "../utils/debounce";
-import { newFluxEdge, modifyFluxEdge, addFluxEdge } from "../utils/fluxEdge";
+import { newFluxEdge, addFluxEdge } from "../utils/fluxEdge";
 import {
   getFluxNode,
-  getFluxNodeGPTChildren,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
   getFluxNodeLineage,
@@ -29,20 +26,14 @@ import {
   markOnlyNodeAsSelected,
   addUserNodeLinkedToASystemNode,
   getConnectionAllowed,
-  setFluxNodeStreamId,
 } from "../utils/fluxNode";
 import { useLocalStorage } from "../utils/lstore";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
-import { messagesFromLineage } from "../utils/prompt";
+import { messageFromNode } from "../utils/prompt";
 import { getQueryParam, resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
-import {
-  FluxNodeData,
-  FluxNodeType,
-  Settings,
-  CreateChatCompletionStreamResponseChoicesInner,
-} from "../utils/types";
+import { FluxNodeData, FluxNodeType, Settings } from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -198,199 +189,156 @@ function App() {
   // Takes a prompt, submits it to the GPT API with n responses,
   // then creates a child node for each response under the selected node.
   const submitPrompt = async () => {
-    const responses = settings.n;
     const temp = settings.temp;
     const model = settings.model;
-
-    const parentNodeLineage = selectedNodeLineage;
     const parentNode = selectedNodeLineage[0];
-
-    const newNodes = [...nodes];
-
-    const currentNode = getFluxNode(newNodes, parentNode.id)!;
-    const currentNodeChildren = getFluxNodeGPTChildren(newNodes, edges, parentNode.id);
+    const currentNode = getFluxNode(nodes, parentNode.id)!;
+    console.log("current node", currentNode);
 
     const streamId = generateStreamId();
 
-    let firstCompletionId: string | undefined;
+    const stream = await OpenAI(
+      "chat",
+      {
+        model,
+        temperature: temp,
+        messages: messageFromNode(currentNode, settings),
+      },
+      { apiKey: apiKey!, mode: "raw" }
+    );
 
-    // Update newNodes, adding new child nodes as needed
-    for (let i = 0; i < responses; i++) {
-      const id = generateNodeId();
+    const DECODER = new TextDecoder();
 
-      if (i === 0) firstCompletionId = id;
+    const abortController = new AbortController();
 
-      // Otherwise, we'll create a new node.
-      newNodes.push(
-        newFluxNode({
-          id,
-          // Position it 50px below the current node, offset
-          // horizontally according to the number of responses
-          // such that the middle response is right below the current node.
-          // Note that node x y coords are the top left corner of the node,
-          // so we need to offset by at the width of the node (150px).
-          x:
-            (currentNodeChildren.length > 0
-              ? // If there are already children we want to put the
-                // next child to the right of the furthest right one.
-                currentNodeChildren.reduce((prev, current) =>
-                  prev.position.x > current.position.x ? prev : current
-                ).position.x +
-                (responses / 2) * 180 +
-                90
-              : currentNode.position.x) +
-            (i - (responses - 1) / 2) * 180,
-          // Add OVERLAP_RANDOMNESS_MAX of randomness to the y position so that nodes don't overlap.
-          y: currentNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
-          fluxNodeType: FluxNodeType.GPT,
-          text: "",
-          streamId,
-        })
-      );
-    }
+    type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
+    type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
 
-    if (firstCompletionId === undefined) throw new Error("No first completion id!");
+    const createNewNodeAndEdge = (
+      baseX: number,
+      numNewLines: number,
+      offset: number,
+      currentNode: Node,
+      newFluxNode: (node: Partial<Node>) => Node,
+      newFluxEdge: (node: Partial<Edge>) => Edge,
+      setNodes: SetNodes,
+      setEdges: SetEdges
+    ) => {
+      const totalWidth = offset * 3;
+      const startX = baseX - totalWidth / 2;
+      const newX = startX + numNewLines * offset;
+      const currentChildNodeId = generateNodeId();
 
-    (async () => {
-      const stream = await OpenAI(
-        "chat",
-        {
-          model,
-          n: responses,
-          temperature: temp,
-          messages: messagesFromLineage(parentNodeLineage, settings),
-        },
-        { apiKey: apiKey!, mode: "raw" }
-      );
+      const newNode = newFluxNode({
+        id: currentChildNodeId,
+        x: newX,
+        y: currentNode.position.y + 100,
+        fluxNodeType: FluxNodeType.GPT,
+        text: "",
+        streamId,
+      });
 
-      const DECODER = new TextDecoder();
+      console.log("new node", newNode);
 
-      const abortController = new AbortController();
+      setNodes((prevNodes: Node[]) => [...prevNodes, newNode]);
+      setEdges((prevEdges) => [
+        ...prevEdges,
+        newFluxEdge({
+          source: currentNode.id,
+          target: currentChildNodeId,
+          animated: true,
+        }),
+      ]);
 
-      for await (const chunk of yieldStream(stream, abortController)) {
-        if (abortController.signal.aborted) break;
+      return currentChildNodeId;
+    };
 
-        try {
-          const decoded = JSON.parse(DECODER.decode(chunk));
+    const updatePreviousEdge = (currentChildNodeId: string, setEdges: SetEdges) => {
+      setEdges((prevEdges: Edge[]) => {
+        return prevEdges.map((edge) => {
+          if (edge.target === currentChildNodeId) {
+            return { ...edge, animated: false };
+          }
+          return edge;
+        });
+      });
+    };
 
-          if (decoded.choices === undefined)
-            throw new Error(
-              "No choices in response. Decoded response: " + JSON.stringify(decoded)
-            );
+    let currentText = "";
+    let currentChildNodeId: string | null = null;
 
-          const choice: CreateChatCompletionStreamResponseChoicesInner =
-            decoded.choices[0];
+    let numNewLines = 0;
+    let isFirstNode = true;
 
-          if (choice.index === undefined)
-            throw new Error(
-              "No index in choice. Decoded choice: " + JSON.stringify(choice)
-            );
+    for await (const chunk of yieldStream(stream, abortController)) {
+      if (abortController.signal.aborted) break;
 
-          const correspondingNodeId =
-            newNodes[newNodes.length - responses + choice.index].id;
+      try {
+        const decoded = JSON.parse(DECODER.decode(chunk));
+        const choice = decoded.choices[0];
 
-          // The ChatGPT API will start by returning a
-          // choice with only a role delta and no content.
-          if (choice.delta?.content) {
+        if (choice.delta?.content) {
+          const chars = choice.delta.content;
+
+          if (isFirstNode || chars.endsWith("\n")) {
+            currentText += chars.slice(0, -1);
             setNodes((newerNodes) => {
-              try {
-                return appendTextToFluxNodeAsGPT(newerNodes, {
-                  id: correspondingNodeId,
-                  text: choice.delta?.content ?? UNDEFINED_RESPONSE_STRING,
-                  streamId, // This will cause a throw if the streamId has changed.
-                });
-              } catch (e: any) {
-                // If the stream id does not match,
-                // it is stale and we should abort.
-                abortController.abort(e.message);
-
-                return newerNodes;
-              }
+              return appendTextToFluxNodeAsGPT(newerNodes, {
+                id: currentChildNodeId!,
+                text: currentText,
+                streamId,
+              });
             });
+
+            if (!isFirstNode) {
+              updatePreviousEdge(currentChildNodeId!, setEdges);
+            }
+            currentChildNodeId = createNewNodeAndEdge(
+              currentNode.position.x,
+              numNewLines,
+              180,
+              currentNode,
+              newFluxNode,
+              newFluxEdge,
+              setNodes,
+              setEdges
+            );
+            isFirstNode = false;
+            numNewLines++;
+            currentText = chars;
+          } else {
+            currentText += chars;
+          }
+
+          console.log("current text", currentText);
+
+          setNodes((newerNodes) => {
+            return appendTextToFluxNodeAsGPT(newerNodes, {
+              id: currentChildNodeId!,
+              text: currentText,
+              streamId,
+            });
+          });
+
+          if (chars.endsWith("\n")) {
+            currentText = "";
           }
 
           // We cannot return within the loop, and we do
           // not want to execute the code below, so we break.
           if (abortController.signal.aborted) break;
-
-          // If the choice has a finish reason, then it's the final
-          // choice and we can mark it as no longer animated right now.
-          if (choice.finish_reason !== null) {
-            // Reset the stream id.
-            setNodes((nodes) =>
-              setFluxNodeStreamId(nodes, { id: correspondingNodeId, streamId: undefined })
-            );
-
-            setEdges((edges) =>
-              modifyFluxEdge(edges, {
-                source: parentNode.id,
-                target: correspondingNodeId,
-                animated: false,
-              })
-            );
-          }
-        } catch (err) {
-          console.error(err);
         }
+      } catch (err) {
+        console.error(err);
       }
+    }
 
-      // If the stream wasn't aborted or was aborted due to a cancelation.
-      if (
-        !abortController.signal.aborted ||
-        abortController.signal.reason === STREAM_CANCELED_ERROR_MESSAGE
-      ) {
-        // Mark all the edges as no longer animated.
-        for (let i = 0; i < responses; i++) {
-          const correspondingNodeId = newNodes[newNodes.length - responses + i].id;
+    // stop animating final edge
+    if (currentChildNodeId) {
+      updatePreviousEdge(currentChildNodeId!, setEdges);
+    }
 
-          // Reset the stream id.
-          setNodes((nodes) =>
-            setFluxNodeStreamId(nodes, { id: correspondingNodeId, streamId: undefined })
-          );
-
-          setEdges((edges) =>
-            modifyFluxEdge(edges, {
-              source: parentNode.id,
-              target: correspondingNodeId,
-              animated: false,
-            })
-          );
-        }
-      }
-    })().catch((err) =>
-      toast({
-        title: err.toString(),
-        status: "error",
-        ...TOAST_CONFIG,
-      })
-    );
-
-    setNodes(markOnlyNodeAsSelected(newNodes, firstCompletionId!));
-
-    setSelectedNodeId(firstCompletionId);
-
-    setEdges((edges) => {
-      let newEdges = [...edges];
-
-      for (let i = 0; i < responses; i++) {
-        // Update the links between
-        // re-used nodes if necessary.
-        // The new nodes are added to the end of the array, so we need to
-        // subtract responses from and add i to length of the array to access.
-        const childId = newNodes[newNodes.length - responses + i].id;
-
-        // Otherwise, add a new edge.
-        newEdges.push(
-          newFluxEdge({
-            source: parentNode.id,
-            target: childId,
-            animated: true,
-          })
-        );
-      }
-
-      return newEdges;
-    });
+    console.log("FINAL NODES", nodes);
 
     autoZoomIfNecessary();
 
