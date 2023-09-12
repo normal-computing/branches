@@ -48,6 +48,7 @@ Input: {{ example.input }}
 Possible next steps:
 {% for next_step in example.next_steps %}{{ next_step }}
 {% endfor %}{% endfor %}
+Provide only 4 possible next steps.
 Input: {{ input }}
 Possible next steps:
 `;
