@@ -205,8 +205,6 @@ export const cotPrompt = cotPromptDecorator((renderedTemplate: string) => {
 async function nodeGenerator(node: Node, fanout: number = 5): Promise<Node[]> {
   let currNumsStr: string;
 
-  console.log("node", node);
-
   if (node.steps.length === 0) {
     currNumsStr = node.input;
   } else {
@@ -214,29 +212,30 @@ async function nodeGenerator(node: Node, fanout: number = 5): Promise<Node[]> {
     // Assuming getCurrentNumbers has been defined in TypeScript as shared before
   }
 
-  if (currNumsStr !== "24") {
-    let prompt = proposePrompt(currNumsStr);
-    // Assuming proposePrompt function exists and returns a string
+  let prompt = proposePrompt(currNumsStr);
+  // Assuming proposePrompt function exists and returns a string
 
-    let llmOutput = await llm(prompt);
-    // Assuming llm function exists and returns the desired output
-    let nextSteps = getNextSteps(llmOutput, fanout);
-    console.log("next steps", nextSteps);
+  let llmOutput = await llm(prompt);
+  // Assuming llm function exists and returns the desired output
+  let nextSteps = getNextSteps(llmOutput, fanout);
 
-    let newNodes: Node[] = nextSteps.map(
-      (step) => new Node(node.input, node.steps.concat([step]))
-    );
+  // Check if any nextSteps result in "24"
+  let newNodes: Node[] = [];
+  for (const step of nextSteps) {
+    if (getCurrentNumbers(step) === "24") {
+      let prompt =
+        cotPrompt(node.input) + "\nSteps:\n" + node.steps.concat([step]).join("\n");
+      // Assuming cotPrompt function exists and returns a string
 
-    return newNodes;
-  } else {
-    let prompt = cotPrompt(node.input);
-    // Assuming cotPrompt function exists and returns a string
-
-    let answer = (await llm(prompt)) as string;
-    // Remember to await llm here too, as it's an async operation
-    let leafNode = new Node(node.input, node.steps, answer);
-    return [leafNode];
+      let answer = (await llm(prompt)) as string;
+      // Remember to await llm here too, as it's an async operation
+      let leafNode = new Node(node.input, node.steps, answer);
+      return [leafNode];
+    } else {
+      newNodes.push(new Node(node.input, node.steps.concat([step])));
+    }
   }
+  return newNodes;
 }
 
 // VALUE PROMPT
@@ -453,6 +452,7 @@ export async function treeOfThoughtsBfs(x: string): Promise<string[]> {
   const terminalData: Proposal[] = [];
   const root = new Node(x);
   let queue: Node[] = [root];
+  let foundTerminal = false;
 
   for (let step = 0; step < N_STEPS; step++) {
     const allProposalData: Proposal[] = [];
@@ -474,9 +474,13 @@ export async function treeOfThoughtsBfs(x: string): Promise<string[]> {
 
         if (proposal.isTerminal) {
           terminalData.push(proposal);
+          foundTerminal = true;
+          return;
         }
       });
+      if (foundTerminal) break;
     }
+    if (foundTerminal) break;
 
     console.log(`>> step ${step + 1}: ${allProposalData.length} proposals`);
 

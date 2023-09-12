@@ -27,7 +27,6 @@ export async function llm(
         n: samples,
         temperature: 0.7, // adjust if necessary
       });
-      console.log("just sent this prompt", promptContent);
 
       var response = null;
 
@@ -38,7 +37,6 @@ export async function llm(
           (choice) => choice["message"]["content"] as string
         );
       }
-      console.log("got this response", response);
       return response;
     } catch (error) {
       console.error("Error calling OpenAI API:", error);
