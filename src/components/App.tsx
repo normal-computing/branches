@@ -62,7 +62,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { yieldStream } from "yield-stream";
-import { treeDemo, treeAnswerDemo } from "./tree";
+import { treeDemo } from "./tree";
 
 function App() {
   const toast = useToast();
@@ -140,15 +140,13 @@ function App() {
     [reactFlow, nodes, edges]
   );
 
-  const [filterAnwser, setFilterAnswer] = useState<boolean>(false);
-
   // Auto restore on load.
   useEffect(() => {
     if (reactFlow) {
       // const rawFlow = undefined;
 
       // const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
-      const flow: ReactFlowJsonObject = filterAnwser ? treeAnswerDemo : treeDemo;
+      const flow: ReactFlowJsonObject = treeDemo;
 
       // Get the content of the newTreeWith query param.
       const content = getQueryParam(NEW_TREE_CONTENT_QUERY_PARAM);
@@ -236,6 +234,7 @@ function App() {
         fluxNodeType: FluxNodeType.GPT,
         text: "",
         streamId,
+        steps: [...currentNode.data.steps, ""],
       });
 
       console.log("new node", newNode);
@@ -412,6 +411,7 @@ function App() {
           y: selectedNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
           fluxNodeType: type,
           text: "",
+          steps: [],
         })
       );
 
@@ -690,8 +690,9 @@ function App() {
                   })
                 );
               }}
-              onCreateNewConversation={() => newUserNodeLinkedToANewSystemNode()}
               apiKey={apiKey}
+              nodes={nodes}
+              edges={edges}
             />
           </Box>
         </Row>

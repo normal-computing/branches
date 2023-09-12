@@ -1,4 +1,4 @@
-import { Node } from "reactflow";
+import { Node, Edge } from "reactflow";
 import {
   Tabs,
   TabList,
@@ -8,6 +8,7 @@ import {
   Tag,
   TagLeftIcon,
   TagLabel,
+  Textarea,
   List,
   ListItem,
   ListIcon,
@@ -22,6 +23,8 @@ import { Prompt } from "./Prompt";
 import { ToTNodeData } from "./tree";
 import { getPlatformModifierKeyText } from "../utils/platform";
 import { getFluxNodeTypeDarkColor } from "../utils/color";
+import { getFluxNodeParent } from "../utils/fluxNode";
+import { useEffect, useState } from "react";
 
 function EvalListItem({ item }: { item: string }) {
   const lines = item.split("\n");
@@ -58,8 +61,9 @@ export function NodeInfo({
   selectNode,
   submitPrompt,
   apiKey,
-  onCreateNewConversation,
   onPromptType,
+  nodes,
+  edges,
 }: {
   lineage: Node<FluxNodeData>[] | null;
   settings: Settings;
@@ -69,12 +73,25 @@ export function NodeInfo({
   selectNode: (id: string) => void;
   newConnectedToSelectedNode: (type: FluxNodeType) => void;
   apiKey: string | null;
-  onCreateNewConversation: () => void;
   onPromptType: (text: string) => void;
+  nodes: Node<FluxNodeData>[];
+  edges: Edge[];
 }) {
   const selectedNode =
     lineage &&
     (lineage.find((n) => n.selected === true) as Node<ToTNodeData> | undefined);
+  const selectedNodeId = selectedNode?.id ?? null;
+
+  const [selectedNodeParent, setSelectedNodeParent] = useState<
+    Node<FluxNodeData> | null | undefined
+  >(null);
+
+  useEffect(() => {
+    const newSelectedNodeParent =
+      selectedNodeId !== null ? getFluxNodeParent(nodes, edges, selectedNodeId) : null;
+    setSelectedNodeParent(newSelectedNodeParent);
+  }, [selectedNodeId, nodes, edges]);
+
   return (
     <div className="node-info">
       <Tabs>
@@ -106,7 +123,17 @@ export function NodeInfo({
             <Heading as="h4" size="md">
               Input
             </Heading>
-            <p>{selectedNode?.data.input ?? ""}</p>
+            {selectedNodeParent || selectedNodeId == null ? (
+              <p>{selectedNode?.data.input ?? ""}</p>
+            ) : (
+              <Textarea
+                defaultValue={selectedNode?.data.input ?? ""}
+                onChange={(e) => {
+                  const newText = e.target.value;
+                  onPromptType(newText);
+                }}
+              />
+            )}
             <Heading as="h4" size="md">
               Score
             </Heading>
@@ -168,7 +195,6 @@ export function NodeInfo({
                   width="400px"
                   height="100px"
                   fontSize="xl"
-                  onClick={() => onCreateNewConversation()}
                   color={getFluxNodeTypeDarkColor(FluxNodeType.GPT)}
                 >
                   Create a new conversation tree

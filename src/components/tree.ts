@@ -37,25 +37,6 @@ export const treeDemoNodes: Node[] = [
   },
 ];
 
-export const treeAnswerPathNodes: Node[] = [
-  {
-    id: "0",
-    position: { x: 0, y: 0 },
-    data: {
-      id: "0",
-      parent_id: "",
-      input: "1 2 3 4",
-      steps: [],
-      output: "",
-      label: "1 2 3 4",
-      score: "",
-      evals: "",
-      isValid: true,
-      isTerminal: false,
-    },
-  },
-];
-
 export const treeDemoEdges = [];
 
 function processNode(node: Node): Node<ToTNodeData> {
@@ -93,16 +74,6 @@ function processNode(node: Node): Node<ToTNodeData> {
 
 export const treeDemo = {
   nodes: treeDemoNodes.map(processNode),
-  edges: treeDemoEdges,
-  viewport: {
-    x: 0,
-    y: 0,
-    zoom: 1,
-  },
-};
-
-export const treeAnswerDemo = {
-  nodes: treeAnswerPathNodes.map(processNode),
   edges: treeDemoEdges,
   viewport: {
     x: 0,

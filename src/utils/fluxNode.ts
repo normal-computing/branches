@@ -22,6 +22,7 @@ export function newFluxNode({
   fluxNodeType,
   text,
   streamId,
+  steps,
 }: {
   id?: string;
   x: number;
@@ -29,6 +30,7 @@ export function newFluxNode({
   fluxNodeType: FluxNodeType;
   text: string;
   streamId?: string;
+  steps: string[];
 }): Node<FluxNodeData> {
   return {
     id: id ?? generateNodeId(),
@@ -41,6 +43,7 @@ export function newFluxNode({
       fluxNodeType,
       text,
       streamId,
+      steps,
     },
   };
 }
@@ -58,6 +61,7 @@ export function addFluxNode(
     fluxNodeType,
     text,
     streamId,
+    steps,
   }: {
     id?: string;
     x: number;
@@ -65,9 +69,10 @@ export function addFluxNode(
     fluxNodeType: FluxNodeType;
     text: string;
     streamId?: string;
+    steps: string[];
   }
 ): Node<FluxNodeData>[] {
-  const newNode = newFluxNode({ x, y, fluxNodeType, text, id, streamId });
+  const newNode = newFluxNode({ x, y, fluxNodeType, text, id, streamId, steps });
 
   return [...existingNodes, newNode];
 }
@@ -92,6 +97,7 @@ export function addUserNodeLinkedToASystemNode(
     y: 500,
     fluxNodeType: FluxNodeType.System,
     text: systemNodeText,
+    steps: [],
   });
 
   nodesCopy.push(systemNode);
@@ -105,6 +111,7 @@ export function addUserNodeLinkedToASystemNode(
       y: systemNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
       fluxNodeType: FluxNodeType.User,
       text: userNodeText ?? "",
+      steps: [],
     })
   );
 
@@ -138,6 +145,8 @@ export function modifyFluxNodeText(
     const copy = { ...node, data: { ...node.data } };
 
     copy.data.text = text;
+    copy.data.input = text;
+    copy.data.label = text;
 
     // If the node's fluxNodeType is GPT and we're changing
     // it as a human then its type becomes GPT + Human.
@@ -209,6 +218,8 @@ export function appendTextToFluxNodeAsGPT(
     const isFirstToken = copy.data.text.length === 0;
 
     copy.data.text = text;
+    copy.data.label = text;
+    copy.data.steps[copy.data.steps.length - 1] = text;
 
     // Preserve custom labels
     if (copy.data.hasCustomlabel) return copy;
