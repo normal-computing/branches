@@ -82,6 +82,7 @@ export function modifyFluxNodeText(
     const copy = { ...node, data: { ...node.data } };
 
     copy.data.text = text;
+    copy.data.input = text;
     copy.data.label = text;
 
     // If the node's fluxNodeType is GPT and we're changing
