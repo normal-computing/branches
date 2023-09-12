@@ -7,24 +7,20 @@ import {
   FIT_VIEW_SETTINGS,
   MODEL_SETTINGS_LOCAL_STORAGE_KEY,
   NEW_TREE_CONTENT_QUERY_PARAM,
-  OVERLAP_RANDOMNESS_MAX,
   REACT_FLOW_NODE_TYPES,
   REACT_FLOW_LOCAL_STORAGE_KEY,
   TOAST_CONFIG,
   SAVED_CHAT_SIZE_LOCAL_STORAGE_KEY,
 } from "../utils/constants";
 import { useDebouncedEffect } from "../utils/debounce";
-import { newFluxEdge, addFluxEdge } from "../utils/fluxEdge";
+import { newFluxEdge } from "../utils/fluxEdge";
 import {
   getFluxNode,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
   getFluxNodeLineage,
-  addFluxNode,
   modifyFluxNodeText,
-  getFluxNodeChildren,
   markOnlyNodeAsSelected,
-  addUserNodeLinkedToASystemNode,
   getConnectionAllowed,
 } from "../utils/fluxNode";
 import { useLocalStorage } from "../utils/lstore";
@@ -166,9 +162,8 @@ function App() {
 
           // If there was a newTreeWith query param, create a new tree with that content.
           // We pass false for forceAutoZoom because we'll do it 500ms later to avoid lag.
-          if (content) newUserNodeLinkedToANewSystemNode(content, false);
-        } else newUserNodeLinkedToANewSystemNode(content, false); // Create a new node if there are none.
-      } else newUserNodeLinkedToANewSystemNode(content, false); // Create a new node if there are none.
+        }
+      }
 
       setTimeout(() => {
         // Do this with a more generous timeout to make sure
@@ -232,6 +227,7 @@ function App() {
         x: newX,
         y: currentNode.position.y + 100,
         fluxNodeType: FluxNodeType.GPT,
+        input: currentNode.data.input,
         text: "",
         streamId,
         steps: [...currentNode.data.steps, ""],
@@ -309,8 +305,6 @@ function App() {
             currentText += chars;
           }
 
-          console.log("current text", currentText);
-
           setNodes((newerNodes) => {
             return appendTextToFluxNodeAsGPT(newerNodes, {
               id: currentChildNodeId!,
@@ -356,82 +350,6 @@ function App() {
   /*//////////////////////////////////////////////////////////////
                         NODE MUTATION CALLBACKS
   //////////////////////////////////////////////////////////////*/
-
-  const newUserNodeLinkedToANewSystemNode = (
-    text: string | null = "",
-    forceAutoZoom: boolean = true
-  ) => {
-    const systemId = generateNodeId();
-    const userId = generateNodeId();
-
-    selectNode(userId, (nodes) =>
-      addUserNodeLinkedToASystemNode(
-        nodes,
-        settings.defaultPreamble,
-        text,
-        systemId,
-        userId
-      )
-    );
-
-    setEdges((edges) =>
-      addFluxEdge(edges, {
-        source: systemId,
-        target: userId,
-        animated: false,
-      })
-    );
-
-    if (forceAutoZoom) autoZoom();
-
-    if (MIXPANEL_TOKEN) mixpanel.track("New conversation tree created");
-  };
-
-  const newConnectedToSelectedNode = (type: FluxNodeType) => {
-    const selectedNode = getFluxNode(nodes, selectedNodeId!);
-
-    if (selectedNode) {
-      const selectedNodeChildren = getFluxNodeChildren(nodes, edges, selectedNodeId!);
-
-      const id = generateNodeId();
-
-      selectNode(id, (nodes) =>
-        addFluxNode(nodes, {
-          id,
-          x:
-            selectedNodeChildren.length > 0
-              ? // If there are already children we want to put the
-                // next child to the right of the furthest right one.
-                selectedNodeChildren.reduce((prev, current) =>
-                  prev.position.x > current.position.x ? prev : current
-                ).position.x + 180
-              : selectedNode.position.x,
-          // Add OVERLAP_RANDOMNESS_MAX of randomness to
-          // the y position so that nodes don't overlap.
-          y: selectedNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
-          fluxNodeType: type,
-          text: "",
-          steps: [],
-        })
-      );
-
-      setEdges((edges) =>
-        addFluxEdge(edges, {
-          source: selectedNodeId!,
-          target: id,
-          animated: false,
-        })
-      );
-
-      autoZoomIfNecessary();
-
-      if (type === FluxNodeType.User) {
-        if (MIXPANEL_TOKEN) mixpanel.track("New user node created");
-      } else {
-        if (MIXPANEL_TOKEN) mixpanel.track("New system node created");
-      }
-    }
-  };
 
   /*//////////////////////////////////////////////////////////////
                       NODE SELECTION CALLBACKS
@@ -678,7 +596,6 @@ function App() {
               setSettings={setSettings}
               selectNode={selectNode}
               isGPT4={isGPT4}
-              newConnectedToSelectedNode={newConnectedToSelectedNode}
               lineage={selectedNodeLineage}
               submitPrompt={submitPrompt}
               onPromptType={(text: string) => {

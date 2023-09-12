@@ -180,26 +180,14 @@ export function Prompt({
         id="promptButtons"
       >
         <BigButton
-          tooltip={
-            promptNodeType === FluxNodeType.User
-              ? `${modifierKeyText}⏎`
-              : `${modifierKeyText}P`
-          }
+          tooltip=""
           onClick={onMainButtonClick}
           color={getFluxNodeTypeDarkColor(promptNodeType)}
           width="100%"
           height="100%"
           fontSize="lg"
         >
-          {promptNodeType === FluxNodeType.User ? "Generate" : "Compose"}
-          <Text fontWeight="extrabold">
-            &nbsp;
-            {promptNodeType === FluxNodeType.User
-              ? displayNameFromFluxNodeType(FluxNodeType.GPT, isGPT4)
-              : displayNameFromFluxNodeType(FluxNodeType.User, isGPT4)}
-            &nbsp;
-          </Text>
-          response
+          Generate children nodes
         </BigButton>
       </Row>
 

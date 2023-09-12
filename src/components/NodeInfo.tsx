@@ -70,7 +70,6 @@ export function NodeInfo({
   isGPT4: boolean;
   submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;
-  newConnectedToSelectedNode: (type: FluxNodeType) => void;
   apiKey: string | null;
   onPromptType: (text: string) => void;
   nodes: Node<ToTNodeData>[];

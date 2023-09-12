@@ -14,27 +14,9 @@ export function adjustColor(color: string, amount: number) {
 }
 
 export function getFluxNodeTypeColor(fluxNodeType: FluxNodeType) {
-  switch (fluxNodeType) {
-    case FluxNodeType.User:
-      return "#EEEEEE";
-    case FluxNodeType.GPT:
-      return "#d9f3d6";
-    case FluxNodeType.TweakedGPT:
-      return "#f7d0a1";
-    case FluxNodeType.System:
-      return "#C5E2F6";
-  }
+  return "#d9f3d6";
 }
 
 export function getFluxNodeTypeDarkColor(fluxNodeType: FluxNodeType) {
-  switch (fluxNodeType) {
-    case FluxNodeType.User:
-      return "#A9ABAE";
-    case FluxNodeType.GPT:
-      return "#619F83";
-    case FluxNodeType.TweakedGPT:
-      return "#CB7937";
-    case FluxNodeType.System:
-      return "#5F8AF7";
-  }
+  return "#619F83";
 }

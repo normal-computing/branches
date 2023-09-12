@@ -449,7 +449,6 @@ type Proposal = {
 export async function treeOfThoughtsBfs(x: string): Promise<string[]> {
   const N_BEST = 5;
   const N_STEPS = 3;
-  const N_EVAL = 3;
 
   const terminalData: Proposal[] = [];
   const root = new Node(x);

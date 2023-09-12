@@ -20,6 +20,7 @@ export function newFluxNode({
   x,
   y,
   fluxNodeType,
+  input,
   text,
   streamId,
   steps,
@@ -28,6 +29,7 @@ export function newFluxNode({
   x: number;
   y: number;
   fluxNodeType: FluxNodeType;
+  input: string;
   text: string;
   streamId?: string;
   steps: string[];
@@ -41,9 +43,10 @@ export function newFluxNode({
     data: {
       label: text,
       fluxNodeType,
-      text,
-      streamId,
+      input,
       steps,
+      streamId,
+      text,
     },
   };
 }
@@ -51,72 +54,6 @@ export function newFluxNode({
 /*//////////////////////////////////////////////////////////////
                          TRANSFORMERS
 //////////////////////////////////////////////////////////////*/
-
-export function addFluxNode(
-  existingNodes: Node<ToTNodeData>[],
-  {
-    id,
-    x,
-    y,
-    fluxNodeType,
-    text,
-    streamId,
-    steps,
-  }: {
-    id?: string;
-    x: number;
-    y: number;
-    fluxNodeType: FluxNodeType;
-    text: string;
-    streamId?: string;
-    steps: string[];
-  }
-): Node<ToTNodeData>[] {
-  const newNode = newFluxNode({ x, y, fluxNodeType, text, id, streamId, steps });
-
-  return [...existingNodes, newNode];
-}
-
-export function addUserNodeLinkedToASystemNode(
-  nodes: Node<ToTNodeData>[],
-  systemNodeText: string,
-  userNodeText: string | null = "",
-  systemId: string = generateNodeId(),
-  userId: string = generateNodeId()
-) {
-  const nodesCopy = [...nodes];
-
-  const systemNode = newFluxNode({
-    id: systemId,
-    x:
-      nodesCopy.length > 0
-        ? nodesCopy.reduce((prev, current) =>
-            prev.position.x > current.position.x ? prev : current
-          ).position.x + NEW_TREE_X_OFFSET
-        : window.innerWidth / 2 / 2 - 75,
-    y: 500,
-    fluxNodeType: FluxNodeType.System,
-    text: systemNodeText,
-    steps: [],
-  });
-
-  nodesCopy.push(systemNode);
-
-  nodesCopy.push(
-    newFluxNode({
-      id: userId,
-      x: systemNode.position.x,
-      // Add OVERLAP_RANDOMNESS_MAX of randomness to
-      // the y position so that nodes don't overlap.
-      y: systemNode.position.y + 100 + Math.random() * OVERLAP_RANDOMNESS_MAX,
-      fluxNodeType: FluxNodeType.User,
-      text: userNodeText ?? "",
-      steps: [],
-    })
-  );
-
-  return nodesCopy;
-}
 
 export function modifyReactFlowNodeProperties(
   existingNodes: Node<ToTNodeData>[],
@@ -145,7 +82,6 @@ export function modifyFluxNodeText(
     const copy = { ...node, data: { ...node.data } };
 
     copy.data.text = text;
-    copy.data.input = text;
     copy.data.label = text;
 
     // If the node's fluxNodeType is GPT and we're changing
