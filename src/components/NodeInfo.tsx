@@ -153,9 +153,6 @@ export function NodeInfo({
       )}
       {lineage && lineage.length >= 1 ? (
         <Prompt
-          settings={settings}
-          setSettings={setSettings}
-          isGPT4={isGPT4}
           selectNode={selectNode}
           lineage={lineage}
           onType={onPromptType}

@@ -6,7 +6,7 @@ import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
 import { Markdown } from "./utils/Markdown";
 import { NotAllowedIcon } from "@chakra-ui/icons";
-import { Spinner, Text, Button } from "@chakra-ui/react";
+import { Spinner, Button } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
 import { useState, useEffect, useRef } from "react";
 import { Node, useReactFlow } from "reactflow";
@@ -15,15 +15,11 @@ export function Prompt({
   lineage,
   submitPrompt,
   selectNode,
-  settings,
-  setSettings,
 }: {
   lineage: Node<ToTNodeData>[];
   onType: (text: string) => void;
   submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;
-  settings: Settings;
-  setSettings: (settings: Settings) => void;
   apiKey: string | null;
 }) {
   const { setNodes } = useReactFlow();
