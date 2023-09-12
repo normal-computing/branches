@@ -1,7 +1,7 @@
 import { MIXPANEL_TOKEN } from "../../main";
 import { Row } from "../../utils/chakra";
 import { modifyFluxNodeLabel, modifyReactFlowNodeProperties } from "../../utils/fluxNode";
-import { FluxNodeData } from "../../utils/types";
+import { ToTNodeData } from "../../utils/types";
 import { Box, Input, Tooltip } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
 import { useEffect, useState } from "react";
@@ -13,7 +13,7 @@ export function LabelUpdaterNode({
   isConnectable,
 }: {
   id: string;
-  data: FluxNodeData;
+  data: ToTNodeData;
   isConnectable: boolean;
 }) {
   const { setNodes } = useReactFlow();

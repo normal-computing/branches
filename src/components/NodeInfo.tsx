@@ -18,9 +18,8 @@ import { CheckIcon } from "@chakra-ui/icons";
 import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
 import { Column } from "../utils/chakra";
 import { BigButton } from "./utils/BigButton";
-import { FluxNodeData, FluxNodeType, Settings } from "../utils/types";
+import { FluxNodeType, Settings, ToTNodeData } from "../utils/types";
 import { Prompt } from "./Prompt";
-import { ToTNodeData } from "./tree";
 import { getPlatformModifierKeyText } from "../utils/platform";
 import { getFluxNodeTypeDarkColor } from "../utils/color";
 import { getFluxNodeParent } from "../utils/fluxNode";
@@ -65,7 +64,7 @@ export function NodeInfo({
   nodes,
   edges,
 }: {
-  lineage: Node<FluxNodeData>[] | null;
+  lineage: Node<ToTNodeData>[] | null;
   settings: Settings;
   setSettings: (settings: Settings) => void;
   isGPT4: boolean;
@@ -74,7 +73,7 @@ export function NodeInfo({
   newConnectedToSelectedNode: (type: FluxNodeType) => void;
   apiKey: string | null;
   onPromptType: (text: string) => void;
-  nodes: Node<FluxNodeData>[];
+  nodes: Node<ToTNodeData>[];
   edges: Edge[];
 }) {
   const selectedNode =
@@ -83,7 +82,7 @@ export function NodeInfo({
   const selectedNodeId = selectedNode?.id ?? null;
 
   const [selectedNodeParent, setSelectedNodeParent] = useState<
-    Node<FluxNodeData> | null | undefined
+    Node<ToTNodeData> | null | undefined
   >(null);
 
   useEffect(() => {

@@ -33,7 +33,7 @@ import { generateNodeId, generateStreamId } from "../utils/nodeId";
 import { messageFromNode } from "../utils/prompt";
 import { getQueryParam, resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
-import { FluxNodeData, FluxNodeType, Settings } from "../utils/types";
+import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -439,7 +439,7 @@ function App() {
 
   const selectNode = (
     id: string,
-    computeNewNodes?: (currNodes: Node<FluxNodeData>[]) => Node<FluxNodeData>[]
+    computeNewNodes?: (currNodes: Node<ToTNodeData>[]) => Node<ToTNodeData>[]
   ) => {
     setSelectedNodeId(id);
     setNodes((currNodes) =>

@@ -6,7 +6,7 @@ import {
   STALE_STREAM_ERROR_MESSAGE,
   STREAM_CANCELED_ERROR_MESSAGE,
 } from "./constants";
-import { FluxNodeType, FluxNodeData, ReactFlowNodeTypes } from "./types";
+import { FluxNodeType, ToTNodeData, ReactFlowNodeTypes } from "./types";
 import { getFluxNodeTypeColor } from "./color";
 import { generateNodeId } from "./nodeId";
 import { formatAutoLabel } from "./prompt";
@@ -31,7 +31,7 @@ export function newFluxNode({
   text: string;
   streamId?: string;
   steps: string[];
-}): Node<FluxNodeData> {
+}): Node<ToTNodeData> {
   return {
     id: id ?? generateNodeId(),
     position: { x, y },
@@ -53,7 +53,7 @@ export function newFluxNode({
 //////////////////////////////////////////////////////////////*/
 
 export function addFluxNode(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   {
     id,
     x,
@@ -71,14 +71,14 @@ export function addFluxNode(
     streamId?: string;
     steps: string[];
   }
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   const newNode = newFluxNode({ x, y, fluxNodeType, text, id, streamId, steps });
 
   return [...existingNodes, newNode];
 }
 
 export function addUserNodeLinkedToASystemNode(
-  nodes: Node<FluxNodeData>[],
+  nodes: Node<ToTNodeData>[],
   systemNodeText: string,
   userNodeText: string | null = "",
   systemId: string = generateNodeId(),
@@ -119,13 +119,13 @@ export function addUserNodeLinkedToASystemNode(
 }
 
 export function modifyReactFlowNodeProperties(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   {
     id,
     type,
     draggable,
   }: { id: string; type: ReactFlowNodeTypes | undefined; draggable: boolean }
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
@@ -136,9 +136,9 @@ export function modifyReactFlowNodeProperties(
 }
 
 export function modifyFluxNodeText(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   { asHuman, id, text }: { asHuman: boolean; id: string; text: string }
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
@@ -171,9 +171,9 @@ export function modifyFluxNodeText(
 }
 
 export function modifyFluxNodeLabel(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   { id, type, label }: { id: string; type?: FluxNodeType; label: string }
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
@@ -189,7 +189,7 @@ export function modifyFluxNodeLabel(
 }
 
 export function setFluxNodeStreamId(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   { id, streamId }: { id: string; streamId: string | undefined }
 ) {
   return existingNodes.map((node) => {
@@ -200,9 +200,9 @@ export function setFluxNodeStreamId(
 }
 
 export function appendTextToFluxNodeAsGPT(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   { id, text, streamId }: { id: string; text: string; streamId: string }
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
@@ -234,23 +234,10 @@ export function appendTextToFluxNodeAsGPT(
   });
 }
 
-export function deleteFluxNode(
-  existingNodes: Node<FluxNodeData>[],
-  id: string
-): Node<FluxNodeData>[] {
-  return existingNodes.filter((node) => node.id !== id);
-}
-
-export function deleteSelectedFluxNodes(
-  existingNodes: Node<FluxNodeData>[]
-): Node<FluxNodeData>[] {
-  return existingNodes.filter((node) => !node.selected);
-}
-
 export function markOnlyNodeAsSelected(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   id: string
-): Node<FluxNodeData>[] {
+): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     return { ...node, selected: node.id === id };
   });
@@ -261,27 +248,14 @@ export function markOnlyNodeAsSelected(
 //////////////////////////////////////////////////////////////*/
 
 export function getFluxNode(
-  nodes: Node<FluxNodeData>[],
+  nodes: Node<ToTNodeData>[],
   id: string
-): Node<FluxNodeData> | undefined {
+): Node<ToTNodeData> | undefined {
   return nodes.find((node) => node.id === id);
 }
 
-export function getFluxNodeGPTChildren(
-  existingNodes: Node<FluxNodeData>[],
-  existingEdges: Edge[],
-  id: string
-): Node<FluxNodeData>[] {
-  return existingNodes.filter(
-    (node) =>
-      (node.data.fluxNodeType === FluxNodeType.GPT ||
-        node.data.fluxNodeType === FluxNodeType.TweakedGPT) &&
-      getFluxNodeParent(existingNodes, existingEdges, node.id)?.id === id
-  );
-}
-
 export function getFluxNodeChildren(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
 ) {
@@ -290,23 +264,11 @@ export function getFluxNodeChildren(
   );
 }
 
-export function getFluxNodeSiblings(
-  existingNodes: Node<FluxNodeData>[],
-  existingEdges: Edge[],
-  id: string
-): Node<FluxNodeData>[] {
-  const parent = getFluxNodeParent(existingNodes, existingEdges, id);
-
-  if (!parent) return [];
-
-  return getFluxNodeChildren(existingNodes, existingEdges, parent.id);
-}
-
 export function getFluxNodeParent(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
-): Node<FluxNodeData> | undefined {
+): Node<ToTNodeData> | undefined {
   let edge: Edge | undefined;
 
   // We iterate in reverse to ensure we don't try to route
@@ -332,11 +294,11 @@ export function getFluxNodeParent(
 // TODO: Eventually would be nice to have
 // support for connecting multiple parents!
 export function getFluxNodeLineage(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
-): Node<FluxNodeData>[] {
-  const lineage: Node<FluxNodeData>[] = [];
+): Node<ToTNodeData>[] {
+  const lineage: Node<ToTNodeData>[] = [];
 
   let currentNode = getFluxNode(existingNodes, id);
 
@@ -350,7 +312,7 @@ export function getFluxNodeLineage(
 }
 
 export function isFluxNodeInLineage(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   { nodeToCheck, nodeToGetLineageOf }: { nodeToCheck: string; nodeToGetLineageOf: string }
 ): boolean {
@@ -360,7 +322,7 @@ export function isFluxNodeInLineage(
 }
 
 export function getConnectionAllowed(
-  existingNodes: Node<FluxNodeData>[],
+  existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   { source, target }: { source: string; target: string }
 ): boolean {

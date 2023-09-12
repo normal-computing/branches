@@ -1,22 +1,5 @@
-import { Node, useReactFlow } from "reactflow";
-import {
-  FluxNodeData,
-  FluxNodeType,
-  HistoryItem,
-  Settings,
-  CreateChatCompletionStreamResponseChoicesInner,
-  ReactFlowNodeTypes,
-} from "../utils/types";
-
-export type ToTNodeData = FluxNodeData & {
-  input: string;
-  output: string;
-  score: number;
-  steps: string[];
-  evals: string[];
-  isTerminal: boolean;
-  isValid: boolean;
-};
+import { Node } from "reactflow";
+import { ToTNodeData, FluxNodeType } from "../utils/types";
 
 export const treeDemoNodes: Node[] = [
   {

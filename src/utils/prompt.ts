@@ -1,11 +1,11 @@
-import { FluxNodeData, Settings } from "./types";
+import { ToTNodeData, Settings } from "./types";
 import { ChatCompletionRequestMessage } from "openai-streams";
 import { MAX_AUTOLABEL_CHARS } from "./constants";
 import { Node } from "reactflow";
 import * as nunjucks from "nunjucks";
 
 export function messageFromNode(
-  currNode: Node<FluxNodeData>,
+  currNode: Node<ToTNodeData>,
   settings: Settings
 ): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];

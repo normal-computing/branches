@@ -2,7 +2,7 @@ import { MIXPANEL_TOKEN } from "../main";
 import { Row, Center, Column } from "../utils/chakra";
 import { getFluxNodeTypeColor, getFluxNodeTypeDarkColor } from "../utils/color";
 import { displayNameFromFluxNodeType, setFluxNodeStreamId } from "../utils/fluxNode";
-import { FluxNodeData, FluxNodeType, Settings } from "../utils/types";
+import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
 import { LabeledSlider } from "./utils/LabeledInputs";
 import { Markdown } from "./utils/Markdown";
@@ -21,7 +21,7 @@ export function Prompt({
   settings,
   setSettings,
 }: {
-  lineage: Node<FluxNodeData>[];
+  lineage: Node<ToTNodeData>[];
   onType: (text: string) => void;
   submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;

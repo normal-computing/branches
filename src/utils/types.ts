@@ -2,15 +2,22 @@ import { Node, Edge } from "reactflow";
 
 import { ChatCompletionResponseMessage } from "openai-streams";
 
-export type FluxNodeData = {
-  input: string;
-  steps: string[];
-  output: string;
+type FluxNodeData = {
   label: string;
   fluxNodeType: FluxNodeType;
   text: string;
   streamId?: string;
   hasCustomlabel?: boolean;
+};
+
+export type ToTNodeData = FluxNodeData & {
+  input: string;
+  output: string;
+  score: number;
+  steps: string[];
+  evals: string[];
+  isTerminal: boolean;
+  isValid: boolean;
 };
 
 export enum FluxNodeType {
