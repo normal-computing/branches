@@ -1,23 +1,20 @@
 import { MIXPANEL_TOKEN } from "../main";
 import { Row, Center, Column } from "../utils/chakra";
 import { getFluxNodeTypeColor, getFluxNodeTypeDarkColor } from "../utils/color";
-import { displayNameFromFluxNodeType, setFluxNodeStreamId } from "../utils/fluxNode";
+import { setFluxNodeStreamId } from "../utils/fluxNode";
 import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
-import { LabeledSlider } from "./utils/LabeledInputs";
 import { Markdown } from "./utils/Markdown";
 import { NotAllowedIcon } from "@chakra-ui/icons";
 import { Spinner, Text, Button } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
 import { useState, useEffect, useRef } from "react";
 import { Node, useReactFlow } from "reactflow";
-import { getPlatformModifierKeyText } from "../utils/platform";
 
 export function Prompt({
   lineage,
   submitPrompt,
   selectNode,
-  isGPT4,
   settings,
   setSettings,
 }: {
@@ -25,7 +22,6 @@ export function Prompt({
   onType: (text: string) => void;
   submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;
-  isGPT4: boolean;
   settings: Settings;
   setSettings: (settings: Settings) => void;
   apiKey: string | null;
@@ -72,8 +68,6 @@ export function Prompt({
   /*//////////////////////////////////////////////////////////////
                               APP
   //////////////////////////////////////////////////////////////*/
-
-  const modifierKeyText = getPlatformModifierKeyText();
 
   return (
     <>
@@ -148,10 +142,6 @@ export function Prompt({
                   >
                     <NotAllowedIcon boxSize={4} />
                   </Button>
-                  <Text fontWeight="bold" width="auto" whiteSpace="nowrap">
-                    {displayNameFromFluxNodeType(data.fluxNodeType)}
-                    :&nbsp;
-                  </Text>
                   <Column
                     width="100%"
                     marginRight="30px"
@@ -190,40 +180,6 @@ export function Prompt({
           Generate children nodes
         </BigButton>
       </Row>
-
-      {promptNodeType === FluxNodeType.User ? (
-        <>
-          <LabeledSlider
-            mt={3}
-            label="Temperature (randomness)"
-            value={settings.temp}
-            setValue={(v: number) => {
-              setSettings({ ...settings, temp: v });
-
-              if (MIXPANEL_TOKEN) mixpanel.track("Changed temperature inline");
-            }}
-            color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
-            max={1.25}
-            min={0}
-            step={0.01}
-          />
-
-          <LabeledSlider
-            mt={3}
-            label="Number of Responses"
-            value={settings.n}
-            setValue={(v: number) => {
-              setSettings({ ...settings, n: v });
-
-              if (MIXPANEL_TOKEN) mixpanel.track("Changed number of responses inline");
-            }}
-            color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
-            max={10}
-            min={1}
-            step={1}
-          />
-        </>
-      ) : null}
     </>
   );
 }

@@ -92,116 +92,79 @@ export function NodeInfo({
 
   return (
     <div className="node-info">
-      <Tabs>
-        <TabList>
-          <Tab>Details</Tab>
-          <Tab>Conversation</Tab>
-        </TabList>
+      {selectedNode?.data.isTerminal ? (
+        <Tag
+          size="lg"
+          variant="subtle"
+          colorScheme="purple"
+          style={{ marginRight: "0.5rem" }}
+        >
+          <TagLeftIcon boxSize="12px" as={MdThumbUpOffAlt} />
+          <TagLabel>Terminal</TagLabel>
+        </Tag>
+      ) : null}
+      {selectedNode?.data.isValid ? (
+        <Tag size="lg" variant="subtle" colorScheme="green">
+          <TagLeftIcon boxSize="12px" as={CheckIcon} />
+          <TagLabel>Valid</TagLabel>
+        </Tag>
+      ) : null}
 
-        <TabPanels>
-          <TabPanel className="tab-panel-full-width">
-            {selectedNode?.data.isTerminal ? (
-              <Tag
-                size="lg"
-                variant="subtle"
-                colorScheme="purple"
-                style={{ marginRight: "0.5rem" }}
-              >
-                <TagLeftIcon boxSize="12px" as={MdThumbUpOffAlt} />
-                <TagLabel>Terminal</TagLabel>
-              </Tag>
-            ) : null}
-            {selectedNode?.data.isValid ? (
-              <Tag size="lg" variant="subtle" colorScheme="green">
-                <TagLeftIcon boxSize="12px" as={CheckIcon} />
-                <TagLabel>Valid</TagLabel>
-              </Tag>
-            ) : null}
-
-            <Heading as="h4" size="md">
-              Input
-            </Heading>
-            {selectedNodeParent || selectedNodeId == null ? (
-              <p>{selectedNode?.data.input ?? ""}</p>
-            ) : (
-              <Textarea
-                defaultValue={selectedNode?.data.input ?? ""}
-                onChange={(e) => {
-                  const newText = e.target.value;
-                  onPromptType(newText);
-                }}
-              />
-            )}
-            <Heading as="h4" size="md">
-              Score
-            </Heading>
-            <p>{selectedNode?.data.score ?? ""}</p>
-            {selectedNode?.data.output != "" && (
-              <>
-                <Heading as="h4" size="md">
-                  Output
-                </Heading>
-                <p>{selectedNode?.data.output ?? ""}</p>
-              </>
-            )}
-            {selectedNode?.data?.steps && selectedNode?.data?.steps.length > 0 && (
-              <>
-                <Heading as="h4" size="md">
-                  Steps
-                </Heading>
-                <List className="eval-list" spacing={3}>
-                  {selectedNode?.data?.steps?.map((item, i) => {
-                    return <ListItem key={i}>{item}</ListItem>;
-                  })}
-                </List>
-              </>
-            )}
-            {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
-              <>
-                <Heading as="h4" size="md">
-                  Evaluations
-                </Heading>
-                <List className="eval-list" spacing={3}>
-                  {selectedNode?.data?.evals?.map((item, i) => {
-                    return <EvalListItem key={i} item={item} />;
-                  })}
-                </List>
-              </>
-            )}
-          </TabPanel>
-          <TabPanel className="tab-panel-full-width">
-            {lineage && lineage.length >= 1 ? (
-              <Prompt
-                settings={settings}
-                setSettings={setSettings}
-                isGPT4={isGPT4}
-                selectNode={selectNode}
-                lineage={lineage}
-                onType={onPromptType}
-                submitPrompt={submitPrompt}
-                apiKey={apiKey}
-              />
-            ) : (
-              <Column
-                expand
-                textAlign="center"
-                mainAxisAlignment={"center"}
-                crossAxisAlignment={"center"}
-              >
-                <BigButton
-                  tooltip={`⇧${getPlatformModifierKeyText()}P`}
-                  width="400px"
-                  height="100px"
-                  fontSize="xl"
-                  color={getFluxNodeTypeDarkColor(FluxNodeType.GPT)}
-                >
-                  Create a new conversation tree
-                </BigButton>
-              </Column>
-            )}
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+      <Heading as="h4" size="md">
+        Input
+      </Heading>
+      {selectedNodeParent || selectedNodeId == null ? (
+        <p>{selectedNode?.data.input ?? ""}</p>
+      ) : (
+        <Textarea
+          defaultValue={selectedNode?.data.input ?? ""}
+          onChange={(e) => {
+            const newText = e.target.value;
+            onPromptType(newText);
+          }}
+        />
+      )}
+      <Heading as="h4" size="md">
+        Score
+      </Heading>
+      <p>{selectedNode?.data.score ?? ""}</p>
+      {selectedNode?.data.output != "" && (
+        <>
+          <Heading as="h4" size="md">
+            Output
+          </Heading>
+          <p>{selectedNode?.data.output ?? ""}</p>
+        </>
+      )}
+      <Heading as="h4" size="md">
+        Steps
+      </Heading>
+      {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
+        <>
+          <Heading as="h4" size="md">
+            Evaluations
+          </Heading>
+          <List className="eval-list" spacing={3}>
+            {selectedNode?.data?.evals?.map((item, i) => {
+              return <EvalListItem key={i} item={item} />;
+            })}
+          </List>
+        </>
+      )}
+      {lineage && lineage.length >= 1 ? (
+        <Prompt
+          settings={settings}
+          setSettings={setSettings}
+          isGPT4={isGPT4}
+          selectNode={selectNode}
+          lineage={lineage}
+          onType={onPromptType}
+          submitPrompt={submitPrompt}
+          apiKey={apiKey}
+        />
+      ) : (
+        <></>
+      )}
     </div>
   );
 }
