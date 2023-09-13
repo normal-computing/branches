@@ -13,8 +13,8 @@ export function adjustColor(color: string, amount: number) {
   );
 }
 
-export function getFluxNodeTypeColor(fluxNodeType: FluxNodeType) {
-  return "#d9f3d6";
+export function getFluxNodeColor(isTerminal: boolean) {
+  return isTerminal ? "#f7d0a1" : "#d9f3d6";
 }
 
 export function getFluxNodeTypeDarkColor(fluxNodeType: FluxNodeType) {

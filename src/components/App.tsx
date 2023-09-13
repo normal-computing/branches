@@ -6,7 +6,6 @@ import {
   DEFAULT_SETTINGS,
   FIT_VIEW_SETTINGS,
   MODEL_SETTINGS_LOCAL_STORAGE_KEY,
-  NEW_TREE_CONTENT_QUERY_PARAM,
   REACT_FLOW_NODE_TYPES,
   REACT_FLOW_LOCAL_STORAGE_KEY,
   TOAST_CONFIG,
@@ -22,12 +21,13 @@ import {
   modifyFluxNodeText,
   markOnlyNodeAsSelected,
   getConnectionAllowed,
+  checkIfTerminal,
 } from "../utils/fluxNode";
 import { useLocalStorage } from "../utils/lstore";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
-import { messageFromNode } from "../utils/prompt";
-import { getQueryParam, resetURL } from "../utils/qparams";
+import { cotMessageFromNode, messageFromNode } from "../utils/prompt";
+import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
 import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
@@ -59,6 +59,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { yieldStream } from "yield-stream";
 import { treeDemo } from "./tree";
+import { getFluxNodeColor } from "../utils/color";
 
 function App() {
   const toast = useToast();
@@ -144,9 +145,6 @@ function App() {
       // const flow: ReactFlowJsonObject = rawFlow ? JSON.parse(rawFlow) : null;
       const flow: ReactFlowJsonObject = treeDemo;
 
-      // Get the content of the newTreeWith query param.
-      const content = getQueryParam(NEW_TREE_CONTENT_QUERY_PARAM);
-
       if (flow !== null) {
         setEdges(flow.edges || []);
         setViewport(flow.viewport);
@@ -195,7 +193,7 @@ function App() {
       {
         model,
         temperature: temp,
-        messages: messageFromNode(currentNode, settings),
+        messages: messageFromNode(currentNode),
       },
       { apiKey: apiKey!, mode: "raw" }
     );
@@ -245,7 +243,7 @@ function App() {
         }),
       ]);
 
-      return currentChildNodeId;
+      return newNode;
     };
 
     const updatePreviousEdge = (currentChildNodeId: string, setEdges: SetEdges) => {
@@ -259,8 +257,53 @@ function App() {
       });
     };
 
+    // Function to update node with ID `nodeId` in the node array
+    const updateNodeOutput = (nodeId: string, newOutput: string) => {
+      setNodes((prevNodes: Node[]) => {
+        return prevNodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                text: node.data.text,
+                label: node.data.text + "\n\n" + newOutput,
+                output: newOutput, // This assumes 'output' is a field in the data object
+              },
+            };
+          }
+          return node;
+        });
+      });
+    };
+
+    async function getOutput(node: Node<ToTNodeData>): Promise<void> {
+      const prompt = cotMessageFromNode(node);
+      let output = "";
+      const newStream = await OpenAI(
+        "chat",
+        {
+          model,
+          temperature: temp,
+          messages: prompt,
+        },
+        { apiKey: apiKey!, mode: "raw" }
+      );
+      for await (const chunk of yieldStream(newStream, abortController)) {
+        const decoded = JSON.parse(DECODER.decode(chunk));
+        const choice = decoded.choices[0];
+        if (choice.delta?.content) {
+          const chars = choice.delta.content;
+          output += chars;
+        }
+        updateNodeOutput(node.id!, output);
+        // Handle aborting or breaking out of the loop if needed.
+      }
+      // implement stream, update output of node
+    }
+
     let currentText = "";
-    let currentChildNodeId: string | null = null;
+    let currentChildNode: Node<ToTNodeData> | null = null;
 
     let numNewLines = 0;
     let isFirstNode = true;
@@ -275,20 +318,45 @@ function App() {
         if (choice.delta?.content) {
           const chars = choice.delta.content;
 
+          // new node
           if (isFirstNode || chars.endsWith("\n")) {
-            currentText += chars.slice(0, -1);
-            setNodes((newerNodes) => {
-              return appendTextToFluxNodeAsGPT(newerNodes, {
-                id: currentChildNodeId!,
+            currentText += chars;
+            setNodes((prevNodes: Node<ToTNodeData>[]) => {
+              return appendTextToFluxNodeAsGPT(prevNodes, {
+                id: currentChildNode?.id!,
                 text: currentText,
                 streamId,
               });
             });
 
             if (!isFirstNode) {
-              updatePreviousEdge(currentChildNodeId!, setEdges);
+              // node is terminal, solved problem
+              const isTerminal = checkIfTerminal(currentChildNode!);
+              if (isTerminal) {
+                const terminalChild = currentChildNode;
+                setNodes((prevNodes) => {
+                  const newNodes = prevNodes.map((node) => {
+                    if (node.id === terminalChild?.id) {
+                      return {
+                        ...node,
+                        style: { background: getFluxNodeColor(true) },
+                        data: {
+                          ...node.data,
+                          isTerminal: true,
+                        },
+                      };
+                    }
+                    return node;
+                  });
+                  return newNodes;
+                });
+                getOutput(terminalChild!).catch((err) => console.error(err));
+              } else {
+                //updateNodeValidity(currentChildNodeId!);
+              }
+              updatePreviousEdge(currentChildNode?.id!, setEdges);
             }
-            currentChildNodeId = createNewNodeAndEdge(
+            currentChildNode = createNewNodeAndEdge(
               currentNode.position.x,
               numNewLines,
               180,
@@ -305,9 +373,9 @@ function App() {
             currentText += chars;
           }
 
-          setNodes((newerNodes) => {
-            return appendTextToFluxNodeAsGPT(newerNodes, {
-              id: currentChildNodeId!,
+          setNodes((prevNodes: Node<ToTNodeData>[]) => {
+            return appendTextToFluxNodeAsGPT(prevNodes, {
+              id: currentChildNode?.id!,
               text: currentText,
               streamId,
             });
@@ -327,11 +395,9 @@ function App() {
     }
 
     // stop animating final edge
-    if (currentChildNodeId) {
-      updatePreviousEdge(currentChildNodeId!, setEdges);
+    if (currentChildNode?.id) {
+      updatePreviousEdge(currentChildNode?.id!, setEdges);
     }
-
-    console.log("FINAL NODES", nodes);
 
     autoZoomIfNecessary();
 
@@ -449,6 +515,10 @@ function App() {
       })();
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    console.log("Nodes have been updated:", nodes);
+  }, [nodes]);
 
   const isAnythingSaving = isSavingReactFlow || isSavingSettings;
   const isAnythingLoading = isAnythingSaving || availableModels === null;

@@ -1,15 +1,10 @@
 import { Node, Edge } from "reactflow";
 
-import {
-  NEW_TREE_X_OFFSET,
-  OVERLAP_RANDOMNESS_MAX,
-  STALE_STREAM_ERROR_MESSAGE,
-  STREAM_CANCELED_ERROR_MESSAGE,
-} from "./constants";
+import { STALE_STREAM_ERROR_MESSAGE, STREAM_CANCELED_ERROR_MESSAGE } from "./constants";
 import { FluxNodeType, ToTNodeData, ReactFlowNodeTypes } from "./types";
-import { getFluxNodeTypeColor } from "./color";
+import { getFluxNodeColor } from "./color";
 import { generateNodeId } from "./nodeId";
-import { formatAutoLabel } from "./prompt";
+import { formatAutoLabel, getCurrentNumbers } from "./prompt";
 
 /*//////////////////////////////////////////////////////////////
                          CONSTRUCTORS
@@ -38,7 +33,7 @@ export function newFluxNode({
     id: id ?? generateNodeId(),
     position: { x, y },
     style: {
-      background: getFluxNodeTypeColor(fluxNodeType),
+      background: getFluxNodeColor(false),
     },
     data: {
       label: text,
@@ -90,7 +85,7 @@ export function modifyFluxNodeText(
     if (asHuman && copy.data.fluxNodeType === FluxNodeType.GPT) {
       copy.style = {
         ...copy.style,
-        background: getFluxNodeTypeColor(FluxNodeType.TweakedGPT),
+        background: getFluxNodeColor(copy.data.isTerminal),
       };
 
       copy.data.fluxNodeType = FluxNodeType.TweakedGPT;
@@ -134,6 +129,11 @@ export function setFluxNodeStreamId(
 
     return { ...node, data: { ...node.data, streamId } };
   });
+}
+
+export function checkIfTerminal(node: Node<ToTNodeData>): boolean {
+  const currentNumbers = getCurrentNumbers(node.data.steps[node.data.steps.length - 1]);
+  return currentNumbers === "24";
 }
 
 export function appendTextToFluxNodeAsGPT(

@@ -1,6 +1,6 @@
 import { MIXPANEL_TOKEN } from "../main";
 import { Row, Center, Column } from "../utils/chakra";
-import { getFluxNodeTypeColor, getFluxNodeTypeDarkColor } from "../utils/color";
+import { getFluxNodeColor, getFluxNodeTypeDarkColor } from "../utils/color";
 import { setFluxNodeStreamId } from "../utils/fluxNode";
 import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
@@ -90,7 +90,7 @@ export function Prompt({
               position="relative"
               onMouseEnter={() => setHoveredNodeId(node.id)}
               onMouseLeave={() => setHoveredNodeId(null)}
-              bg={getFluxNodeTypeColor(data.fluxNodeType)}
+              bg={getFluxNodeColor(data.isTerminal)}
               key={node.id}
               onClick={() => {
                 const selection = window.getSelection();
