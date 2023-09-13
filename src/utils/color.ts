@@ -13,7 +13,10 @@ export function adjustColor(color: string, amount: number) {
   );
 }
 
-export function getFluxNodeColor(isTerminal: boolean) {
+export function getFluxNodeColor(isRunning: boolean, isTerminal: boolean) {
+  if (isRunning) {
+    return "#c5e2f6";
+  }
   return isTerminal ? "#f7d0a1" : "#d9f3d6";
 }
 

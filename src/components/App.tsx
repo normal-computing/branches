@@ -229,6 +229,7 @@ function App() {
         text: "",
         streamId,
         steps: [...currentNode.data.steps, ""],
+        style: { background: getFluxNodeColor(true, false) },
       });
 
       console.log("new node", newNode);
@@ -244,6 +245,21 @@ function App() {
       ]);
 
       return newNode;
+    };
+
+    const updatePreviousNodeColor = (nodeId: string, setNodes: SetNodes) => {
+      setNodes((prevNodes: Node<ToTNodeData>[]) => {
+        const newNodes = prevNodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              style: { background: getFluxNodeColor(false, node.data.isTerminal) },
+            };
+          }
+          return node;
+        });
+        return newNodes;
+      });
     };
 
     const updatePreviousEdge = (currentChildNodeId: string, setEdges: SetEdges) => {
@@ -304,6 +320,7 @@ function App() {
 
     let currentText = "";
     let currentChildNode: Node<ToTNodeData> | null = null;
+    let prevChildNode: Node<ToTNodeData> | null = null;
 
     let numNewLines = 0;
     let isFirstNode = true;
@@ -329,17 +346,18 @@ function App() {
               });
             });
 
+            prevChildNode = currentChildNode;
+
             if (!isFirstNode) {
+              const isTerminal = checkIfTerminal(prevChildNode!);
               // node is terminal, solved problem
-              const isTerminal = checkIfTerminal(currentChildNode!);
               if (isTerminal) {
-                const terminalChild = currentChildNode;
-                setNodes((prevNodes) => {
+                setNodes((prevNodes: Node<ToTNodeData>[]) => {
                   const newNodes = prevNodes.map((node) => {
-                    if (node.id === terminalChild?.id) {
+                    if (node.id === prevChildNode?.id) {
                       return {
                         ...node,
-                        style: { background: getFluxNodeColor(true) },
+                        style: { background: getFluxNodeColor(true, isTerminal) }, // isTerminal is true
                         data: {
                           ...node.data,
                           isTerminal: true,
@@ -350,11 +368,13 @@ function App() {
                   });
                   return newNodes;
                 });
-                getOutput(terminalChild!).catch((err) => console.error(err));
+                getOutput(prevChildNode!).catch((err) => console.error(err));
               } else {
                 //updateNodeValidity(currentChildNodeId!);
               }
-              updatePreviousEdge(currentChildNode?.id!, setEdges);
+
+              updatePreviousNodeColor(prevChildNode?.id!, setNodes);
+              updatePreviousEdge(prevChildNode?.id!, setEdges);
             }
             currentChildNode = createNewNodeAndEdge(
               currentNode.position.x,
@@ -396,6 +416,7 @@ function App() {
 
     // stop animating final edge
     if (currentChildNode?.id) {
+      updatePreviousNodeColor(currentChildNode?.id!, setNodes);
       updatePreviousEdge(currentChildNode?.id!, setEdges);
     }
 
@@ -662,10 +683,7 @@ function App() {
 
           <Box height="100%" width="100%" overflowY="scroll" p={4}>
             <NodeInfo
-              settings={settings}
-              setSettings={setSettings}
               selectNode={selectNode}
-              isGPT4={isGPT4}
               lineage={selectedNodeLineage}
               submitPrompt={submitPrompt}
               onPromptType={(text: string) => {

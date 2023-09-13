@@ -35,7 +35,7 @@ export function messageFromNode(
   return messages;
 }
 
-function getCurrentNumbers(val: string): string {
+export function getCurrentNumbers(val: string): string {
   console.log("val", val);
   const lastLine = val.trim().split("\n").pop() || "";
   return lastLine.split("left: ").pop()?.split(")")[0] || "";

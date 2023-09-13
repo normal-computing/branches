@@ -19,6 +19,7 @@ export function newFluxNode({
   text,
   streamId,
   steps,
+  style,
 }: {
   id?: string;
   x: number;
@@ -28,12 +29,13 @@ export function newFluxNode({
   text: string;
   streamId?: string;
   steps: string[];
+  style: any;
 }): Node<ToTNodeData> {
   return {
     id: id ?? generateNodeId(),
     position: { x, y },
     style: {
-      background: getFluxNodeColor(false),
+      background: style.background,
     },
     data: {
       label: text,

@@ -1,10 +1,5 @@
 import { Node, Edge } from "reactflow";
 import {
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Tag,
   TagLeftIcon,
   TagLabel,
@@ -16,12 +11,8 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
 import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
-import { Column } from "../utils/chakra";
-import { BigButton } from "./utils/BigButton";
-import { FluxNodeType, Settings, ToTNodeData } from "../utils/types";
+import { Settings, ToTNodeData } from "../utils/types";
 import { Prompt } from "./Prompt";
-import { getPlatformModifierKeyText } from "../utils/platform";
-import { getFluxNodeTypeDarkColor } from "../utils/color";
 import { getFluxNodeParent } from "../utils/fluxNode";
 import { useEffect, useState } from "react";
 
@@ -54,9 +45,6 @@ function EvalListItem({ item }: { item: string }) {
 
 export function NodeInfo({
   lineage,
-  settings,
-  setSettings,
-  isGPT4,
   selectNode,
   submitPrompt,
   apiKey,
