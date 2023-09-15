@@ -26,7 +26,12 @@ import {
 import { useLocalStorage } from "../utils/lstore";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
-import { cotMessageFromNode, messageFromNode } from "../utils/prompt";
+import {
+  cotMessageFromNode,
+  evalMessageFromNode,
+  messageFromNode,
+  parseAndCompute,
+} from "../utils/prompt";
 import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
 import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
@@ -229,7 +234,7 @@ function App() {
         text: "",
         streamId,
         steps: [...currentNode.data.steps, ""],
-        style: { background: getFluxNodeColor(true, false) },
+        style: { background: getFluxNodeColor(true, false, 0) },
       });
 
       console.log("new node", newNode);
@@ -247,13 +252,19 @@ function App() {
       return newNode;
     };
 
-    const updatePreviousNodeColor = (nodeId: string, setNodes: SetNodes) => {
+    const updateNodeColor = (nodeId: string, setNodes: SetNodes) => {
       setNodes((prevNodes: Node<ToTNodeData>[]) => {
         const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
             return {
               ...node,
-              style: { background: getFluxNodeColor(false, node.data.isTerminal) },
+              style: {
+                background: getFluxNodeColor(
+                  false,
+                  node.data.isTerminal,
+                  node.data.score
+                ),
+              },
             };
           }
           return node;
@@ -318,6 +329,121 @@ function App() {
       // implement stream, update output of node
     }
 
+    const updateNodeEvals = (nodeId: string, newEvals: string[]) => {
+      setNodes((prevNodes: Node[]) => {
+        return prevNodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                evals: newEvals,
+              },
+            };
+          }
+          return node;
+        });
+      });
+    };
+
+    const updateNodeScore = (nodeId: string, score: number) => {
+      setNodes((prevNodes: Node[]) => {
+        return prevNodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                score,
+              },
+            };
+          }
+          return node;
+        });
+      });
+    };
+
+    async function getEvals(node: Node<ToTNodeData>, N_EVAL: number): Promise<void> {
+      const prompt = evalMessageFromNode(node);
+      let allEvals: string[] = [];
+
+      await Promise.all(
+        Array.from({ length: N_EVAL }).map(async (_, i) => {
+          let evalOutput = "";
+          const newStream = await OpenAI(
+            "chat",
+            {
+              model,
+              temperature: temp,
+              messages: prompt,
+            },
+            { apiKey: apiKey!, mode: "raw" }
+          );
+
+          for await (const chunk of yieldStream(newStream, abortController)) {
+            const decoded = JSON.parse(DECODER.decode(chunk));
+            const choice = decoded.choices[0];
+            if (choice.delta?.content) {
+              const chars = choice.delta.content;
+              evalOutput += chars;
+            }
+
+            if (!allEvals[i]) {
+              allEvals[i] = "";
+            }
+            allEvals[i] = evalOutput;
+            updateNodeEvals(node.id!, [...allEvals]);
+          }
+        })
+      );
+      console.log("final eval output", allEvals);
+      const score = parseAndCompute(allEvals);
+      updateNodeScore(node.id!, score);
+      console.log("score", score);
+      updateNodeColor(node.id!, setNodes);
+
+      // implement stream, update output of node
+    }
+
+    function handleFinishedNode(finishedNode: Node<ToTNodeData>) {
+      if (!isFirstNode) {
+        const isTerminal = checkIfTerminal(finishedNode!);
+        // node is terminal, solved problem
+        if (isTerminal) {
+          setNodes((prevNodes: Node<ToTNodeData>[]) => {
+            const newNodes = prevNodes.map((node) => {
+              if (node.id === finishedNode?.id) {
+                return {
+                  ...node,
+                  style: {
+                    background: getFluxNodeColor(
+                      true,
+                      isTerminal,
+                      finishedNode.data.score
+                    ),
+                  }, // isTerminal is true
+                  data: {
+                    ...node.data,
+                    isTerminal: true,
+                  },
+                };
+              }
+              return node;
+            });
+            return newNodes;
+          });
+          getOutput(finishedNode!).catch((err) => console.error(err));
+        } else {
+          //updateNodeValidity(currentChildNodeId!);
+          console.log("getting eval output");
+          getEvals(finishedNode!, 3).catch((err) => console.error(err));
+        }
+
+        updateNodeColor(finishedNode?.id!, setNodes);
+        updatePreviousEdge(finishedNode?.id!, setEdges);
+      }
+    }
+
     let currentText = "";
     let currentChildNode: Node<ToTNodeData> | null = null;
     let prevChildNode: Node<ToTNodeData> | null = null;
@@ -346,36 +472,8 @@ function App() {
               });
             });
 
-            prevChildNode = currentChildNode;
+            handleFinishedNode(currentChildNode!);
 
-            if (!isFirstNode) {
-              const isTerminal = checkIfTerminal(prevChildNode!);
-              // node is terminal, solved problem
-              if (isTerminal) {
-                setNodes((prevNodes: Node<ToTNodeData>[]) => {
-                  const newNodes = prevNodes.map((node) => {
-                    if (node.id === prevChildNode?.id) {
-                      return {
-                        ...node,
-                        style: { background: getFluxNodeColor(true, isTerminal) }, // isTerminal is true
-                        data: {
-                          ...node.data,
-                          isTerminal: true,
-                        },
-                      };
-                    }
-                    return node;
-                  });
-                  return newNodes;
-                });
-                getOutput(prevChildNode!).catch((err) => console.error(err));
-              } else {
-                //updateNodeValidity(currentChildNodeId!);
-              }
-
-              updatePreviousNodeColor(prevChildNode?.id!, setNodes);
-              updatePreviousEdge(prevChildNode?.id!, setEdges);
-            }
             currentChildNode = createNewNodeAndEdge(
               currentNode.position.x,
               numNewLines,
@@ -414,11 +512,7 @@ function App() {
       }
     }
 
-    // stop animating final edge
-    if (currentChildNode?.id) {
-      updatePreviousNodeColor(currentChildNode?.id!, setNodes);
-      updatePreviousEdge(currentChildNode?.id!, setEdges);
-    }
+    handleFinishedNode(currentChildNode!);
 
     autoZoomIfNecessary();
 

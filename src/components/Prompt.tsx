@@ -90,7 +90,7 @@ export function Prompt({
               position="relative"
               onMouseEnter={() => setHoveredNodeId(node.id)}
               onMouseLeave={() => setHoveredNodeId(null)}
-              bg={getFluxNodeColor(false, data.isTerminal)}
+              bg={getFluxNodeColor(false, data.isTerminal, data.score)}
               key={node.id}
               onClick={() => {
                 const selection = window.getSelection();

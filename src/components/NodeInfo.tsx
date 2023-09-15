@@ -112,11 +112,8 @@ export function NodeInfo({
           }}
         />
       )}
-      <Heading as="h4" size="md">
-        Score
-      </Heading>
-      <p>{selectedNode?.data.score ?? ""}</p>
-      {selectedNode?.data.output != "" && (
+
+      {selectedNode?.data.output && selectedNode?.data.output != "" && (
         <>
           <Heading as="h4" size="md">
             Output
@@ -127,6 +124,18 @@ export function NodeInfo({
       <Heading as="h4" size="md">
         Steps
       </Heading>
+
+      {lineage && lineage.length >= 1 ? (
+        <Prompt
+          selectNode={selectNode}
+          lineage={lineage}
+          onType={onPromptType}
+          submitPrompt={submitPrompt}
+          apiKey={apiKey}
+        />
+      ) : (
+        <></>
+      )}
       {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
         <>
           <Heading as="h4" size="md">
@@ -139,16 +148,13 @@ export function NodeInfo({
           </List>
         </>
       )}
-      {lineage && lineage.length >= 1 ? (
-        <Prompt
-          selectNode={selectNode}
-          lineage={lineage}
-          onType={onPromptType}
-          submitPrompt={submitPrompt}
-          apiKey={apiKey}
-        />
-      ) : (
-        <></>
+      {selectedNode?.data.score && (
+        <>
+          <Heading as="h4" size="md">
+            Evaluation Score
+          </Heading>
+          <p style={{ whiteSpace: "pre-line" }}>{selectedNode?.data.score ?? ""}</p>
+        </>
       )}
     </div>
   );

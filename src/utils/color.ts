@@ -13,11 +13,16 @@ export function adjustColor(color: string, amount: number) {
   );
 }
 
-export function getFluxNodeColor(isRunning: boolean, isTerminal: boolean) {
+export function getFluxNodeColor(isRunning: boolean, isTerminal: boolean, score: number) {
   if (isRunning) {
     return "#c5e2f6";
   }
-  return isTerminal ? "#f7d0a1" : "#d9f3d6";
+  if (isTerminal) {
+    return "#f7d0a1";
+  }
+
+  const opacity = Math.min(Math.max(score / 60, 0.2), 1); // constrain opacity between 0.2 and 1
+  return `rgba(217, 243, 214, ${opacity})`; // RGBA for #d9f3d6 with varying opacity
 }
 
 export function getFluxNodeTypeDarkColor(fluxNodeType: FluxNodeType) {

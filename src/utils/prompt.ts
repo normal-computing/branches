@@ -167,9 +167,46 @@ function valuePromptDecorator(fn: Function) {
   };
 }
 
-export const valuePrompt = valuePromptDecorator((renderedTemplate: string) => {
+const valuePrompt = valuePromptDecorator((renderedTemplate: string) => {
   return renderedTemplate;
 });
+
+export function evalMessageFromNode(
+  currNode: Node<ToTNodeData>
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+
+  // Using cotPrompt to generate the prompt
+  const currNumsStr = getCurrentNumbers(
+    currNode.data.steps[currNode.data.steps.length - 1]
+  );
+  let prompt = valuePrompt(currNumsStr);
+  console.log("making this value prompt", prompt);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.table(messages);
+
+  return messages;
+}
+
+export function parseAndCompute(valueOutputs: string[]): number {
+  const valueMap: { [key: string]: number } = {
+    impossible: 0.001,
+    likely: 1,
+    sure: 20,
+  };
+
+  function computeValue(sample: string): number {
+    const valueName = sample.split("\n").slice(-1)[0];
+    return valueMap[valueName] || 0;
+  }
+
+  return valueOutputs.map(computeValue).reduce((a, b) => a + b, 0);
+}
 
 const valueLastStepPromptTemplate = `Use numbers and basic arithmetic operations (+ - * /) to obtain 24. Given an input and an answer, give a judgement (sure/impossible) if the answer is correct, i.e. it uses each input exactly once and no other numbers, and reach 24.
 {% for example in examples %}
@@ -200,10 +237,6 @@ function valueLastStepPromptDecorator(fn: Function) {
     return fn(renderedTemplate);
   };
 }
-
-const valueLastStepPrompt = valueLastStepPromptDecorator((renderedTemplate: string) => {
-  return renderedTemplate;
-});
 
 // COT PROMPT
 const cotPromptTemplate = `Use numbers and basic arithmetic operations (+ - * /) to obtain 24. Be sure to use numbers uniquely only once. Each step, you are only allowed to choose two of the remaining numbers to obtain a new number.
