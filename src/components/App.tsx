@@ -188,20 +188,9 @@ function App() {
     const temp = settings.temp;
     const model = settings.model;
     const parentNode = selectedNodeLineage[0];
-    const currentNode = getFluxNode(nodes, parentNode.id)!;
-    console.log("current node", currentNode);
-
+    const submittedNode = getFluxNode(nodes, parentNode.id)!;
     const streamId = generateStreamId();
-
-    const stream = await OpenAI(
-      "chat",
-      {
-        model,
-        temperature: temp,
-        messages: messageFromNode(currentNode),
-      },
-      { apiKey: apiKey!, mode: "raw" }
-    );
+    console.log("current node", submittedNode);
 
     const DECODER = new TextDecoder();
 
@@ -307,7 +296,7 @@ function App() {
     async function getOutput(node: Node<ToTNodeData>): Promise<void> {
       const prompt = cotMessageFromNode(node);
       let output = "";
-      const newStream = await OpenAI(
+      const outputStream = await OpenAI(
         "chat",
         {
           model,
@@ -316,7 +305,7 @@ function App() {
         },
         { apiKey: apiKey!, mode: "raw" }
       );
-      for await (const chunk of yieldStream(newStream, abortController)) {
+      for await (const chunk of yieldStream(outputStream, abortController)) {
         const decoded = JSON.parse(DECODER.decode(chunk));
         const choice = decoded.choices[0];
         if (choice.delta?.content) {
@@ -444,26 +433,59 @@ function App() {
       }
     }
 
-    let currentText = "";
-    let currentChildNode: Node<ToTNodeData> | null = null;
-    let prevChildNode: Node<ToTNodeData> | null = null;
+    async function generateChildren(node: Node) {
+      console.log("new streamId", streamId);
 
-    let numNewLines = 0;
-    let isFirstNode = true;
+      const stream = await OpenAI(
+        "chat",
+        {
+          model,
+          temperature: temp,
+          messages: messageFromNode(node),
+        },
+        { apiKey: apiKey!, mode: "raw" }
+      );
 
-    for await (const chunk of yieldStream(stream, abortController)) {
-      if (abortController.signal.aborted) break;
+      for await (const chunk of yieldStream(stream, abortController)) {
+        if (abortController.signal.aborted) break;
 
-      try {
-        const decoded = JSON.parse(DECODER.decode(chunk));
-        const choice = decoded.choices[0];
+        try {
+          const decoded = JSON.parse(DECODER.decode(chunk));
+          const choice = decoded.choices[0];
 
-        if (choice.delta?.content) {
-          const chars = choice.delta.content;
+          if (choice.delta?.content) {
+            const chars = choice.delta.content;
 
-          // new node
-          if (isFirstNode || chars.endsWith("\n")) {
-            currentText += chars;
+            // new node
+            if (isFirstNode || chars.endsWith("\n")) {
+              currentText += chars;
+              setNodes((prevNodes: Node<ToTNodeData>[]) => {
+                return appendTextToFluxNodeAsGPT(prevNodes, {
+                  id: currentChildNode?.id!,
+                  text: currentText,
+                  streamId,
+                });
+              });
+
+              handleFinishedNode(currentChildNode!);
+
+              currentChildNode = createNewNodeAndEdge(
+                node.position.x,
+                numNewLines,
+                180,
+                node,
+                newFluxNode,
+                newFluxEdge,
+                setNodes,
+                setEdges
+              );
+              isFirstNode = false;
+              numNewLines++;
+              currentText = chars;
+            } else {
+              currentText += chars;
+            }
+
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
               return appendTextToFluxNodeAsGPT(prevNodes, {
                 id: currentChildNode?.id!,
@@ -472,47 +494,42 @@ function App() {
               });
             });
 
-            handleFinishedNode(currentChildNode!);
+            if (chars.endsWith("\n")) {
+              currentText = "";
+            }
 
-            currentChildNode = createNewNodeAndEdge(
-              currentNode.position.x,
-              numNewLines,
-              180,
-              currentNode,
-              newFluxNode,
-              newFluxEdge,
-              setNodes,
-              setEdges
-            );
-            isFirstNode = false;
-            numNewLines++;
-            currentText = chars;
-          } else {
-            currentText += chars;
+            // We cannot return within the loop, and we do
+            // not want to execute the code below, so we break.
+            if (abortController.signal.aborted) break;
           }
-
-          setNodes((prevNodes: Node<ToTNodeData>[]) => {
-            return appendTextToFluxNodeAsGPT(prevNodes, {
-              id: currentChildNode?.id!,
-              text: currentText,
-              streamId,
-            });
-          });
-
-          if (chars.endsWith("\n")) {
-            currentText = "";
-          }
-
-          // We cannot return within the loop, and we do
-          // not want to execute the code below, so we break.
-          if (abortController.signal.aborted) break;
+        } catch (err) {
+          console.error(err);
         }
-      } catch (err) {
-        console.error(err);
       }
+
+      handleFinishedNode(currentChildNode!);
     }
 
-    handleFinishedNode(currentChildNode!);
+    let currentText = "";
+    let currentChildNode: Node<ToTNodeData> | null = null;
+
+    let numNewLines = 0;
+    let isFirstNode = true;
+
+    const N_BEST = 5;
+    const N_STEPS = 3;
+
+    let queue: Node<ToTNodeData>[] = [submittedNode];
+    let foundTerminal = false;
+
+    for (let step = 0; step < N_STEPS; step++) {
+      const allProposalNodes: Node<ToTNodeData>[] = [];
+
+      for (let node of queue) {
+        await generateChildren(node);
+      }
+      queue = [];
+    }
 
     autoZoomIfNecessary();
 
