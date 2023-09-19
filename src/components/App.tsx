@@ -190,6 +190,7 @@ function App() {
     const parentNode = selectedNodeLineage[0];
     const submittedNode = getFluxNode(nodes, parentNode.id)!;
     const streamId = generateStreamId();
+    let foundTerminal = false;
     console.log("current node", submittedNode);
 
     const DECODER = new TextDecoder();
@@ -343,6 +344,7 @@ function App() {
               ...node,
               data: {
                 ...node.data,
+                label: node.data.text + "\n\nScore: " + score.toFixed(1),
                 score,
               },
             };
@@ -352,7 +354,10 @@ function App() {
       });
     };
 
-    async function getEvals(node: Node<ToTNodeData>, N_EVAL: number): Promise<void> {
+    async function getEvals(
+      node: Node<ToTNodeData>,
+      N_EVAL: number
+    ): Promise<{ evals: string[]; score: number }> {
       const prompt = evalMessageFromNode(node);
       let allEvals: string[] = [];
 
@@ -385,56 +390,67 @@ function App() {
           }
         })
       );
-      console.log("final eval output", allEvals);
       const score = parseAndCompute(allEvals);
       updateNodeScore(node.id!, score);
-      console.log("score", score);
       updateNodeColor(node.id!, setNodes);
-
-      // implement stream, update output of node
+      return { evals: allEvals, score };
     }
 
-    function handleFinishedNode(finishedNode: Node<ToTNodeData>) {
-      if (!isFirstNode) {
-        const isTerminal = checkIfTerminal(finishedNode!);
-        // node is terminal, solved problem
-        if (isTerminal) {
-          setNodes((prevNodes: Node<ToTNodeData>[]) => {
-            const newNodes = prevNodes.map((node) => {
-              if (node.id === finishedNode?.id) {
-                return {
-                  ...node,
-                  style: {
-                    background: getFluxNodeColor(
-                      true,
-                      isTerminal,
-                      finishedNode.data.score
-                    ),
-                  }, // isTerminal is true
-                  data: {
-                    ...node.data,
-                    isTerminal: true,
-                  },
-                };
-              }
-              return node;
-            });
-            return newNodes;
+    async function handleFinishedNode(
+      finishedNode: Node<ToTNodeData>
+    ): Promise<Node<ToTNodeData>> {
+      let modifiedNode = { ...finishedNode };
+      const isTerminal = checkIfTerminal(finishedNode!);
+      // node is terminal, solved problem
+      if (isTerminal) {
+        console.log("found terminal node");
+        foundTerminal = true;
+        setNodes((prevNodes: Node<ToTNodeData>[]) => {
+          const newNodes = prevNodes.map((node) => {
+            if (node.id === finishedNode?.id) {
+              modifiedNode = {
+                ...node,
+                style: {
+                  background: getFluxNodeColor(true, isTerminal, finishedNode.data.score),
+                },
+                data: {
+                  ...node.data,
+                  isTerminal: true,
+                },
+              };
+              return modifiedNode;
+            }
+            return node;
           });
-          getOutput(finishedNode!).catch((err) => console.error(err));
-        } else {
-          //updateNodeValidity(currentChildNodeId!);
-          console.log("getting eval output");
-          getEvals(finishedNode!, 3).catch((err) => console.error(err));
-        }
+          return newNodes;
+        });
+        await getOutput(finishedNode!).catch((err) => console.error(err));
+      } else {
+        //updateNodeValidity(currentChildNodeId!);
+        console.log("getting eval output");
+        const { evals, score } = await getEvals(finishedNode!, 3).catch((err) => {
+          console.error(err);
+          return { evals: [], score: 0 }; // default values in case of an error
+        });
 
-        updateNodeColor(finishedNode?.id!, setNodes);
-        updatePreviousEdge(finishedNode?.id!, setEdges);
+        modifiedNode.data = {
+          ...modifiedNode.data,
+          evals,
+          score,
+        };
       }
+
+      updateNodeColor(finishedNode?.id!, setNodes);
+      updatePreviousEdge(finishedNode?.id!, setEdges);
+
+      return modifiedNode;
     }
 
-    async function generateChildren(node: Node) {
+    async function generateChildren(node: Node): Promise<Node<ToTNodeData>[]> {
       console.log("new streamId", streamId);
+      let numNewLines = 0;
+      let isFirstNode = true;
+      const newChildren: Node[] = [];
 
       const stream = await OpenAI(
         "chat",
@@ -445,6 +461,7 @@ function App() {
         },
         { apiKey: apiKey!, mode: "raw" }
       );
+      let handlePromises = []; // Collect promises here
 
       for await (const chunk of yieldStream(stream, abortController)) {
         if (abortController.signal.aborted) break;
@@ -458,16 +475,28 @@ function App() {
 
             // new node
             if (isFirstNode || chars.endsWith("\n")) {
-              currentText += chars;
-              setNodes((prevNodes: Node<ToTNodeData>[]) => {
-                return appendTextToFluxNodeAsGPT(prevNodes, {
-                  id: currentChildNode?.id!,
-                  text: currentText,
-                  streamId,
+              if (!isFirstNode) {
+                currentText += chars;
+                setNodes((prevNodes: Node<ToTNodeData>[]) => {
+                  return appendTextToFluxNodeAsGPT(prevNodes, {
+                    id: currentChildNode?.id!,
+                    text: currentText,
+                    streamId,
+                  });
                 });
-              });
 
-              handleFinishedNode(currentChildNode!);
+                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(
+                  currentChildNode!
+                );
+                handlePromises.push(promise);
+                if (
+                  currentChildNode!.data.isTerminal &&
+                  currentChildNode!.data.isTerminal
+                ) {
+                  foundTerminal = true;
+                  return newChildren;
+                }
+              }
 
               currentChildNode = createNewNodeAndEdge(
                 node.position.x,
@@ -507,28 +536,38 @@ function App() {
         }
       }
 
-      handleFinishedNode(currentChildNode!);
+      const finalHandlePromise = handleFinishedNode(currentChildNode!);
+      handlePromises.push(finalHandlePromise);
+      const finishedNodes = await Promise.all(handlePromises);
+      newChildren.push(...finishedNodes);
+      if (currentChildNode!.data.isTerminal && currentChildNode!.data.isTerminal) {
+        foundTerminal = true;
+        return newChildren;
+      }
+      return newChildren;
     }
 
     let currentText = "";
     let currentChildNode: Node<ToTNodeData> | null = null;
 
-    let numNewLines = 0;
-    let isFirstNode = true;
-
-    const N_BEST = 5;
-    const N_STEPS = 3;
+    // TODO: N_BEST usually 5, but 3 makes more sense to me for speed, 4th best or 5th best probably bad
+    const N_BEST = 10; // max nodes in queue TODO
+    //const N_STEPS = 2; // how many times to go through queue again
 
     let queue: Node<ToTNodeData>[] = [submittedNode];
-    let foundTerminal = false;
 
-    for (let step = 0; step < N_STEPS; step++) {
-      const allProposalNodes: Node<ToTNodeData>[] = [];
+    let currentNode = queue.shift(); // Pop the first node from the queue
 
-      for (let node of queue) {
-        await generateChildren(node);
-      }
-      queue = [];
+    while (currentNode && !foundTerminal) {
+      const generatedChildren: Node<ToTNodeData>[] = await generateChildren(currentNode);
+      console.log("generated children", generatedChildren);
+
+      queue.push(...generatedChildren);
+      queue.sort((a, b) => b.data.score - a.data.score);
+      queue = queue.slice(0, N_BEST);
+      currentNode = queue.shift(); // Pop the next node
+      console.log("checking foundTerminal", foundTerminal);
+      autoZoomIfNecessary();
     }
 
     autoZoomIfNecessary();
@@ -648,9 +687,9 @@ function App() {
     }
   }, [apiKey]);
 
-  useEffect(() => {
-    console.log("Nodes have been updated:", nodes);
-  }, [nodes]);
+  // useEffect(() => {
+  //   console.log("Nodes have been updated:", nodes);
+  // }, [nodes]);
 
   const isAnythingSaving = isSavingReactFlow || isSavingSettings;
   const isAnythingLoading = isAnythingSaving || availableModels === null;
@@ -803,6 +842,7 @@ function App() {
                     asHuman: true,
                     id: selectedNodeId!,
                     text,
+                    isRunning: false,
                   })
                 );
               }}

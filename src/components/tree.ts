@@ -12,7 +12,7 @@ export const treeDemoNodes: Node[] = [
       steps: [],
       output: "",
       label: "1 2 3 4",
-      score: "",
+      score: 60,
       evals: "",
       isValid: true,
       isTerminal: false,
