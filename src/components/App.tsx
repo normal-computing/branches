@@ -472,11 +472,13 @@ function App() {
 
           if (choice.delta?.content) {
             const chars = choice.delta.content;
+            console.log("got these chars", chars);
 
             // new node
             if (isFirstNode || chars.endsWith("\n")) {
               if (!isFirstNode) {
                 currentText += chars;
+                console.log("point A, this is currentText", currentText);
                 setNodes((prevNodes: Node<ToTNodeData>[]) => {
                   return appendTextToFluxNodeAsGPT(prevNodes, {
                     id: currentChildNode?.id!,

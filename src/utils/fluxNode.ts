@@ -147,6 +147,7 @@ export function appendTextToFluxNodeAsGPT(
   existingNodes: Node<ToTNodeData>[],
   { id, text, streamId }: { id: string; text: string; streamId: string }
 ): Node<ToTNodeData>[] {
+  console.log("appending this next to node", text);
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
