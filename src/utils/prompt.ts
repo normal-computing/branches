@@ -181,7 +181,6 @@ export function evalMessageFromNode(
     currNode.data.steps[currNode.data.steps.length - 1]
   );
   let prompt = valuePrompt(currNumsStr);
-  console.log("making this value prompt", prompt);
 
   messages.push({
     role: "user",

@@ -450,7 +450,7 @@ function App() {
       console.log("new streamId", streamId);
       let numNewLines = 0;
       let isFirstNode = true;
-      const newChildren: Node[] = [];
+      const newChildren: Node<ToTNodeData>[] = [];
 
       const stream = await OpenAI(
         "chat",
@@ -461,7 +461,7 @@ function App() {
         },
         { apiKey: apiKey!, mode: "raw" }
       );
-      let handlePromises = []; // Collect promises here
+      let handlePromises: Promise<Node<ToTNodeData>>[] = []; // Collect promises here
 
       for await (const chunk of yieldStream(stream, abortController)) {
         if (abortController.signal.aborted) break;
@@ -478,23 +478,20 @@ function App() {
             if (isFirstNode || chars.endsWith("\n")) {
               if (!isFirstNode) {
                 currentText += chars;
-                console.log("point A, this is currentText", currentText);
+                const prevNode = currentChildNode;
+                const prevText = currentText;
                 setNodes((prevNodes: Node<ToTNodeData>[]) => {
                   return appendTextToFluxNodeAsGPT(prevNodes, {
-                    id: currentChildNode?.id!,
-                    text: currentText,
+                    id: prevNode?.id!,
+                    text: prevText,
                     streamId,
                   });
                 });
 
-                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(
-                  currentChildNode!
-                );
+                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(prevNode!);
                 handlePromises.push(promise);
-                if (
-                  currentChildNode!.data.isTerminal &&
-                  currentChildNode!.data.isTerminal
-                ) {
+
+                if (prevNode!.data.isTerminal) {
                   foundTerminal = true;
                   return newChildren;
                 }
@@ -538,7 +535,9 @@ function App() {
         }
       }
 
-      const finalHandlePromise = handleFinishedNode(currentChildNode!);
+      const finalHandlePromise: Promise<Node<ToTNodeData>> = handleFinishedNode(
+        currentChildNode!
+      );
       handlePromises.push(finalHandlePromise);
       const finishedNodes = await Promise.all(handlePromises);
       newChildren.push(...finishedNodes);
