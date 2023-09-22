@@ -17,30 +17,33 @@ import { getFluxNodeParent } from "../utils/fluxNode";
 import { useEffect, useState } from "react";
 
 function EvalListItem({ item }: { item: string }) {
-  const lines = item.split("\n");
-  const lastLine = lines[lines.length - 1];
-  let icon = null;
-  if (lastLine === "sure") {
-    icon = <ListIcon as={MdCheck} color="green.500" />;
-  } else if (lastLine === "impossible") {
-    icon = <ListIcon as={MdClose} color="red.500" />;
-  } else if (lastLine === "likely") {
-    icon = <ListIcon as={MdQuestionMark} color="yellow.500" />;
-  }
+  if (item) {
+    const lines = item.split("\n");
+    const lastLine = lines[lines.length - 1];
+    let icon = null;
+    if (lastLine === "sure") {
+      icon = <ListIcon as={MdCheck} color="green.500" />;
+    } else if (lastLine === "impossible") {
+      icon = <ListIcon as={MdClose} color="red.500" />;
+    } else if (lastLine === "likely") {
+      icon = <ListIcon as={MdQuestionMark} color="yellow.500" />;
+    }
 
-  return (
-    <ListItem>
-      {icon}
-      {lines.map((line, i) => {
-        return (
-          <span key={i}>
-            {line}
-            <br />
-          </span>
-        );
-      })}
-    </ListItem>
-  );
+    return (
+      <ListItem>
+        {icon}
+        {lines.map((line, i) => {
+          return (
+            <span key={i}>
+              {line}
+              <br />
+            </span>
+          );
+        })}
+      </ListItem>
+    );
+  }
+  return <ListItem />;
 }
 
 export function NodeInfo({
