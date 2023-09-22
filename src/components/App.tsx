@@ -405,7 +405,7 @@ function App() {
       text: string
     ): Promise<Node<ToTNodeData>> {
       let modifiedNode = { ...finishedNode };
-      const isTerminal = checkIfTerminal(finishedNode!);
+      const isTerminal = checkIfTerminal(text);
       // node is terminal, solved problem
       if (isTerminal) {
         console.log("found terminal node");
@@ -468,6 +468,7 @@ function App() {
       );
       let handlePromises: Promise<Node<ToTNodeData>>[] = []; // Collect promises here
       let prevText: string = "";
+      let finalText: string = "";
 
       for await (const chunk of yieldStream(stream, abortController)) {
         if (abortController.signal.aborted) break;
@@ -519,7 +520,7 @@ function App() {
               currentText += chars;
             }
 
-            prevText = currentText;
+            finalText = currentText;
 
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
               return appendTextToFluxNodeAsGPT(prevNodes, {
@@ -544,7 +545,7 @@ function App() {
 
       const finalHandlePromise: Promise<Node<ToTNodeData>> = handleFinishedNode(
         currentChildNode!,
-        prevText
+        finalText
       );
       handlePromises.push(finalHandlePromise);
       const finishedNodes = await Promise.all(handlePromises);

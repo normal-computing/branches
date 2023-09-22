@@ -195,8 +195,8 @@ export function setFluxNodeStreamId(
   });
 }
 
-export function checkIfTerminal(node: Node<ToTNodeData>): boolean {
-  const currentNumbers = getCurrentNumbers(node.data.steps[node.data.steps.length - 1]);
+export function checkIfTerminal(text: string): boolean {
+  const currentNumbers = getCurrentNumbers(text);
   return currentNumbers === "24";
 }
 
