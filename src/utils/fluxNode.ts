@@ -48,6 +48,63 @@ export function newFluxNode({
   };
 }
 
+export function adjustNodePositions(nodes: Node[], edges: Edge[], spacing = 200) {
+  // Initial Setup for root node
+  if (nodes.length > 0) {
+    nodes[0].position.x = 0;
+    nodes[0].position.y = 0;
+  }
+
+  nodes.forEach((node) => {
+    const children: Node<ToTNodeData>[] = getFluxNodeChildren(nodes, edges, node.id);
+    if (children.length === 0) return;
+
+    // Adjust children's x position
+    const width = (children.length - 1) * spacing;
+    children.forEach((child, index) => {
+      child.position.x = node.position.x - width / 2 + index * spacing;
+      child.position.y = node.position.y + spacing; // Adjusting y-position based on depth
+    });
+
+    // Check for collisions with cousins and adjust
+    children.forEach((child, index) => {
+      let collidingNode;
+      do {
+        collidingNode = nodes.find(
+          (other) =>
+            other.id !== child.id &&
+            other.position.y === child.position.y &&
+            Math.abs(other.position.x - child.position.x) < spacing
+        );
+
+        if (collidingNode) {
+          // Move the subtree rooted at child to resolve collision
+          const offset = spacing - Math.abs(collidingNode.position.x - child.position.x);
+          updateSubtreePosition(child, offset, 0, nodes, edges);
+        }
+      } while (collidingNode);
+    });
+  });
+
+  return nodes;
+}
+
+function updateSubtreePosition(
+  node: Node,
+  offsetX: number,
+  offsetY: number,
+  nodes: Node[],
+  edges: Edge[]
+) {
+  node.position.x += offsetX;
+  node.position.y += offsetY;
+
+  const children: Node[] = getFluxNodeChildren(nodes, edges, node.id);
+  children.forEach((child) =>
+    updateSubtreePosition(child, offsetX, offsetY, nodes, edges)
+  );
+}
+
 /*//////////////////////////////////////////////////////////////
                          TRANSFORMERS
 //////////////////////////////////////////////////////////////*/
@@ -147,7 +204,6 @@ export function appendTextToFluxNodeAsGPT(
   existingNodes: Node<ToTNodeData>[],
   { id, text, streamId }: { id: string; text: string; streamId: string }
 ): Node<ToTNodeData>[] {
-  console.log("appending this next to node", text);
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 

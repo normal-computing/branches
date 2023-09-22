@@ -14,6 +14,7 @@ import {
 import { useDebouncedEffect } from "../utils/debounce";
 import { newFluxEdge } from "../utils/fluxEdge";
 import {
+  adjustNodePositions,
   getFluxNode,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
@@ -142,6 +143,10 @@ function App() {
     [reactFlow, nodes, edges]
   );
 
+  useEffect(() => {
+    console.log("Edges Updated: ", edges);
+  }, [edges]);
+
   // Auto restore on load.
   useEffect(() => {
     if (reactFlow) {
@@ -201,23 +206,17 @@ function App() {
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
 
     const createNewNodeAndEdge = (
-      baseX: number,
-      numNewLines: number,
-      offset: number,
       currentNode: Node,
       newFluxNode: (node: Partial<Node>) => Node,
       newFluxEdge: (node: Partial<Edge>) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges
     ) => {
-      const totalWidth = offset * 3;
-      const startX = baseX - totalWidth / 2;
-      const newX = startX + numNewLines * offset;
       const currentChildNodeId = generateNodeId();
 
       const newNode = newFluxNode({
         id: currentChildNodeId,
-        x: newX,
+        x: currentNode.position.x + 10, // initially set x to parent's x (adjustNodePositions will handle final x)
         y: currentNode.position.y + 100,
         fluxNodeType: FluxNodeType.GPT,
         input: currentNode.data.input,
@@ -226,8 +225,6 @@ function App() {
         steps: [...currentNode.data.steps, ""],
         style: { background: getFluxNodeColor(true, false, 0) },
       });
-
-      console.log("new node", newNode);
 
       setNodes((prevNodes: Node[]) => [...prevNodes, newNode]);
       setEdges((prevEdges) => [
@@ -238,6 +235,16 @@ function App() {
           animated: true,
         }),
       ]);
+
+      setEdges((prevEdges) => {
+        setNodes((prevNodes) => {
+          // Adjust positions
+          const adjustedNodes = adjustNodePositions(prevNodes, prevEdges);
+
+          return adjustedNodes;
+        });
+        return prevEdges;
+      });
 
       return newNode;
     };
@@ -472,7 +479,6 @@ function App() {
 
           if (choice.delta?.content) {
             const chars = choice.delta.content;
-            console.log("got these chars", chars);
 
             // new node
             if (isFirstNode || chars.endsWith("\n")) {
@@ -497,10 +503,9 @@ function App() {
                 }
               }
 
+              console.log("edges before create new", edges);
+
               currentChildNode = createNewNodeAndEdge(
-                node.position.x,
-                numNewLines,
-                180,
                 node,
                 newFluxNode,
                 newFluxEdge,
