@@ -171,15 +171,11 @@ const valuePrompt = valuePromptDecorator((renderedTemplate: string) => {
   return renderedTemplate;
 });
 
-export function evalMessageFromNode(
-  currNode: Node<ToTNodeData>
-): ChatCompletionRequestMessage[] {
+export function evalMessageFromText(text: string): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];
 
   // Using cotPrompt to generate the prompt
-  const currNumsStr = getCurrentNumbers(
-    currNode.data.steps[currNode.data.steps.length - 1]
-  );
+  const currNumsStr = getCurrentNumbers(text);
   let prompt = valuePrompt(currNumsStr);
 
   messages.push({
@@ -302,12 +298,17 @@ const cotPrompt = cotPromptDecorator((renderedTemplate: string) => {
 });
 
 export function cotMessageFromNode(
-  currNode: Node<ToTNodeData>
+  currNode: Node<ToTNodeData>,
+  text: string
 ): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];
 
   // Using cotPrompt to generate the prompt
-  let prompt = cotPrompt(currNode.data.input) + currNode.data.steps.join("\n");
+  let prompt =
+    cotPrompt(currNode.data.input) +
+    currNode.data.steps.slice(0, -1).join("\n") +
+    "\n" +
+    text;
 
   messages.push({
     role: "user",

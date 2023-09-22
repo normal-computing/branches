@@ -29,7 +29,7 @@ import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
 import {
   cotMessageFromNode,
-  evalMessageFromNode,
+  evalMessageFromText,
   messageFromNode,
   parseAndCompute,
 } from "../utils/prompt";
@@ -142,10 +142,6 @@ function App() {
     1000, // 1 second.
     [reactFlow, nodes, edges]
   );
-
-  useEffect(() => {
-    console.log("Edges Updated: ", edges);
-  }, [edges]);
 
   // Auto restore on load.
   useEffect(() => {
@@ -301,8 +297,8 @@ function App() {
       });
     };
 
-    async function getOutput(node: Node<ToTNodeData>): Promise<void> {
-      const prompt = cotMessageFromNode(node);
+    async function getOutput(node: Node<ToTNodeData>, text: string): Promise<void> {
+      const prompt = cotMessageFromNode(node, text);
       let output = "";
       const outputStream = await OpenAI(
         "chat",
@@ -363,9 +359,10 @@ function App() {
 
     async function getEvals(
       node: Node<ToTNodeData>,
-      N_EVAL: number
+      N_EVAL: number,
+      text: string
     ): Promise<{ evals: string[]; score: number }> {
-      const prompt = evalMessageFromNode(node);
+      const prompt = evalMessageFromText(text);
       let allEvals: string[] = [];
 
       await Promise.all(
@@ -404,7 +401,8 @@ function App() {
     }
 
     async function handleFinishedNode(
-      finishedNode: Node<ToTNodeData>
+      finishedNode: Node<ToTNodeData>,
+      text: string
     ): Promise<Node<ToTNodeData>> {
       let modifiedNode = { ...finishedNode };
       const isTerminal = checkIfTerminal(finishedNode!);
@@ -431,11 +429,11 @@ function App() {
           });
           return newNodes;
         });
-        await getOutput(finishedNode!).catch((err) => console.error(err));
+        await getOutput(finishedNode!, text).catch((err) => console.error(err));
       } else {
         //updateNodeValidity(currentChildNodeId!);
         console.log("getting eval output");
-        const { evals, score } = await getEvals(finishedNode!, 3).catch((err) => {
+        const { evals, score } = await getEvals(finishedNode!, 3, text).catch((err) => {
           console.error(err);
           return { evals: [], score: 0 }; // default values in case of an error
         });
@@ -469,6 +467,7 @@ function App() {
         { apiKey: apiKey!, mode: "raw" }
       );
       let handlePromises: Promise<Node<ToTNodeData>>[] = []; // Collect promises here
+      let prevText: string = "";
 
       for await (const chunk of yieldStream(stream, abortController)) {
         if (abortController.signal.aborted) break;
@@ -485,7 +484,7 @@ function App() {
               if (!isFirstNode) {
                 currentText += chars;
                 const prevNode = currentChildNode;
-                const prevText = currentText;
+                prevText = currentText;
                 setNodes((prevNodes: Node<ToTNodeData>[]) => {
                   return appendTextToFluxNodeAsGPT(prevNodes, {
                     id: prevNode?.id!,
@@ -494,7 +493,10 @@ function App() {
                   });
                 });
 
-                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(prevNode!);
+                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(
+                  prevNode!,
+                  prevText
+                );
                 handlePromises.push(promise);
 
                 if (prevNode!.data.isTerminal) {
@@ -502,8 +504,6 @@ function App() {
                   return newChildren;
                 }
               }
-
-              console.log("edges before create new", edges);
 
               currentChildNode = createNewNodeAndEdge(
                 node,
@@ -518,6 +518,8 @@ function App() {
             } else {
               currentText += chars;
             }
+
+            prevText = currentText;
 
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
               return appendTextToFluxNodeAsGPT(prevNodes, {
@@ -541,7 +543,8 @@ function App() {
       }
 
       const finalHandlePromise: Promise<Node<ToTNodeData>> = handleFinishedNode(
-        currentChildNode!
+        currentChildNode!,
+        prevText
       );
       handlePromises.push(finalHandlePromise);
       const finishedNodes = await Promise.all(handlePromises);
