@@ -310,6 +310,9 @@ export function cotMessageFromNode(
     "\n" +
     text;
 
+  console.log("this is text for answer prompt", text);
+  console.log("this is answer prompt", prompt);
+
   messages.push({
     role: "user",
     content: prompt,

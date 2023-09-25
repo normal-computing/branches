@@ -149,7 +149,12 @@ export function modifyFluxNodeText(
     if (asHuman && copy.data.fluxNodeType === FluxNodeType.GPT) {
       copy.style = {
         ...copy.style,
-        background: getFluxNodeColor(isRunning, copy.data.isTerminal, copy.data.score),
+        background: getFluxNodeColor(
+          false,
+          isRunning,
+          copy.data.isTerminal,
+          copy.data.score
+        ),
       };
 
       copy.data.fluxNodeType = FluxNodeType.TweakedGPT;
