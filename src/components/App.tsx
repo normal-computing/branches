@@ -47,7 +47,6 @@ import { OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
-import { getCurrentNumbers } from "../utils/prompt";
 
 import ReactFlow, {
   addEdge,
