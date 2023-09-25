@@ -288,7 +288,12 @@ function App() {
                 ...node.data,
                 text: node.data.text,
                 label: node.data.text + "\n\n" + newOutput,
-                output: newOutput, // This assumes 'output' is a field in the data object
+                output: newOutput, // This assumes 'output' is a field in the data object,
+                isTerminal: true,
+                isRunning: true,
+              },
+              style: {
+                background: getFluxNodeColor(true, true, 0),
               },
             };
           }
@@ -299,6 +304,13 @@ function App() {
 
     async function getOutput(node: Node<ToTNodeData>, text: string): Promise<void> {
       const prompt = cotMessageFromNode(node, text);
+      const answerNode = createNewNodeAndEdge(
+        node,
+        newFluxNode,
+        newFluxEdge,
+        setNodes,
+        setEdges
+      );
       let output = "";
       const outputStream = await OpenAI(
         "chat",
@@ -316,9 +328,28 @@ function App() {
           const chars = choice.delta.content;
           output += chars;
         }
-        updateNodeOutput(node.id!, output);
+        updateNodeOutput(answerNode.id!, output);
         // Handle aborting or breaking out of the loop if needed.
       }
+      setNodes((prevNodes: Node[]) => {
+        return prevNodes.map((node) => {
+          if (node.id === answerNode.id!) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                isRunning: false,
+                isTerminal: true,
+              },
+              style: {
+                background: getFluxNodeColor(false, true, 0),
+              },
+            };
+          }
+          return node;
+        });
+      });
+      updatePreviousEdge(answerNode.id!, setEdges);
       // implement stream, update output of node
     }
 
@@ -407,6 +438,15 @@ function App() {
       let modifiedNode = { ...finishedNode };
       const isTerminal = checkIfTerminal(text);
       // node is terminal, solved problem
+      const { evals, score } = await getEvals(finishedNode!, 3, text).catch((err) => {
+        console.error(err);
+        return { evals: [], score: 0 }; // default values in case of an error
+      });
+      modifiedNode.data = {
+        ...modifiedNode.data,
+        evals,
+        score,
+      };
       if (isTerminal) {
         console.log("found terminal node");
         foundTerminal = true;
@@ -429,20 +469,8 @@ function App() {
           });
           return newNodes;
         });
-        await getOutput(finishedNode!, text).catch((err) => console.error(err));
-      } else {
-        //updateNodeValidity(currentChildNodeId!);
-        console.log("getting eval output");
-        const { evals, score } = await getEvals(finishedNode!, 3, text).catch((err) => {
-          console.error(err);
-          return { evals: [], score: 0 }; // default values in case of an error
-        });
 
-        modifiedNode.data = {
-          ...modifiedNode.data,
-          evals,
-          score,
-        };
+        await getOutput(finishedNode!, text).catch((err) => console.error(err));
       }
 
       updateNodeColor(finishedNode?.id!, setNodes);
