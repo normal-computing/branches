@@ -81,7 +81,8 @@ function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const [tokenCount, setTokenCount] = useState(0);
+  const [inputTokenCount, setInputTokenCount] = useState(0);
+  const [outputTokenCount, setOutputTokenCount] = useState(0);
 
   const edgeUpdateSuccessful = useRef(true);
 
@@ -316,7 +317,6 @@ function App() {
     };
 
     async function getOutput(node: Node<ToTNodeData>, text: string): Promise<void> {
-      const prompt = cotMessageFromNode(node, text);
       const answerNode = createNewNodeAndEdge(
         node,
         newFluxNode,
@@ -324,13 +324,17 @@ function App() {
         setNodes,
         setEdges
       );
+
+      const messages = cotMessageFromNode(node, text);
+      const newInputTokens = countTokens(messages[0]["content"]);
+      setInputTokenCount((prevCount) => prevCount + newInputTokens);
       let output = "";
       const outputStream = await OpenAI(
         "chat",
         {
           model,
           temperature: temp,
-          messages: prompt,
+          messages,
         },
         { apiKey: apiKey!, mode: "raw" }
       );
@@ -341,7 +345,7 @@ function App() {
           const chars = choice.delta.content;
           output += chars;
           const newTokens = countTokens(chars);
-          setTokenCount((prevCount) => prevCount + newTokens);
+          setOutputTokenCount((prevCount) => prevCount + newTokens);
         }
         updateNodeOutput(answerNode.id!, output);
         // Handle aborting or breaking out of the loop if needed.
@@ -408,7 +412,9 @@ function App() {
       N_EVAL: number,
       text: string
     ): Promise<{ evals: string[]; score: number }> {
-      const prompt = evalMessageFromText(text);
+      const messages = evalMessageFromText(text);
+      const newInputTokens = countTokens(messages[0]["content"]);
+      setInputTokenCount((prevCount) => prevCount + newInputTokens);
       let allEvals: string[] = [];
 
       await Promise.all(
@@ -419,7 +425,7 @@ function App() {
             {
               model,
               temperature: temp,
-              messages: prompt,
+              messages,
             },
             { apiKey: apiKey!, mode: "raw" }
           );
@@ -431,7 +437,7 @@ function App() {
               const chars = choice.delta.content;
               evalOutput += chars;
               const newTokens = countTokens(chars);
-              setTokenCount((prevCount) => prevCount + newTokens);
+              setOutputTokenCount((prevCount) => prevCount + newTokens);
             }
 
             if (!allEvals[i]) {
@@ -507,12 +513,16 @@ function App() {
       let isFirstNode = true;
       const newChildren: Node<ToTNodeData>[] = [];
 
+      const messages = messageFromNode(node);
+      const newInputTokens = countTokens(messages[0]["content"]);
+      setInputTokenCount((prevCount) => prevCount + newInputTokens);
+
       const stream = await OpenAI(
         "chat",
         {
           model,
           temperature: temp,
-          messages: messageFromNode(node),
+          messages,
         },
         { apiKey: apiKey!, mode: "raw" }
       );
@@ -530,7 +540,7 @@ function App() {
           if (choice.delta?.content) {
             const chars = choice.delta.content;
             const newTokens = countTokens(chars);
-            setTokenCount((prevCount) => prevCount + newTokens);
+            setOutputTokenCount((prevCount) => prevCount + newTokens);
 
             // new node
             if (isFirstNode || chars.endsWith("\n")) {
@@ -867,7 +877,11 @@ function App() {
                 />
 
                 <Box>
-                  <p>Token Count: {tokenCount}</p>
+                  <p>Input Token Count: {inputTokenCount}</p>
+                </Box>
+
+                <Box>
+                  <p>Output Token Count: {outputTokenCount}</p>
                 </Box>
 
                 <Box ml="20px">
