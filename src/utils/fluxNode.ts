@@ -49,7 +49,6 @@ export function newFluxNode({
 }
 
 export function adjustNodePositions(nodes: Node[], edges: Edge[], spacing = 200) {
-  // Initial Setup for root node
   if (nodes.length > 0) {
     nodes[0].position.x = 0;
     nodes[0].position.y = 0;
@@ -59,34 +58,69 @@ export function adjustNodePositions(nodes: Node[], edges: Edge[], spacing = 200)
     const children: Node<ToTNodeData>[] = getFluxNodeChildren(nodes, edges, node.id);
     if (children.length === 0) return;
 
-    // Adjust children's x position
+    // Center children's x position relative to the parent node
     const width = (children.length - 1) * spacing;
     children.forEach((child, index) => {
       child.position.x = node.position.x - width / 2 + index * spacing;
-      child.position.y = node.position.y + spacing; // Adjusting y-position based on depth
+      child.position.y = node.position.y + spacing;
     });
 
-    // Check for collisions with cousins and adjust
-    children.forEach((child, index) => {
+    children.forEach((child) => {
       let collidingNode;
       do {
-        collidingNode = nodes.find(
-          (other) =>
-            other.id !== child.id &&
-            other.position.y === child.position.y &&
-            Math.abs(other.position.x - child.position.x) < spacing
-        );
-
-        if (collidingNode) {
-          // Move the subtree rooted at child to resolve collision
-          const offset = spacing - Math.abs(collidingNode.position.x - child.position.x);
-          updateSubtreePosition(child, offset, 0, nodes, edges);
-        }
+        collidingNode = detectCollisionAndAdjust(child, nodes, edges, spacing);
       } while (collidingNode);
     });
   });
 
   return nodes;
+}
+
+function detectCollisionAndAdjust(
+  node: Node,
+  nodes: Node[],
+  edges: Edge[],
+  spacing: number
+) {
+  const collidingNode = nodes.find(
+    (other) =>
+      other.id !== node.id &&
+      other.position.y === node.position.y &&
+      Math.abs(other.position.x - node.position.x) < spacing
+  );
+
+  if (collidingNode) {
+    const offset = spacing - Math.abs(collidingNode.position.x - node.position.x);
+    const nodeAncestor = getFluxNodeParent(nodes, edges, node.id);
+    const collidingNodeAncestor = getFluxNodeParent(nodes, edges, collidingNode.id);
+
+    if (nodeAncestor)
+      adjustAncestorPositions(nodeAncestor, offset / 2, nodes, edges, spacing);
+    if (collidingNodeAncestor)
+      adjustAncestorPositions(collidingNodeAncestor, -offset / 2, nodes, edges, spacing);
+  }
+
+  return collidingNode;
+}
+
+function adjustAncestorPositions(
+  node: Node,
+  offset: number,
+  nodes: Node[],
+  edges: Edge[],
+  spacing: number
+) {
+  const parent = getFluxNodeParent(nodes, edges, node.id);
+  if (!parent) return;
+
+  const siblings = getFluxNodeSiblings(nodes, edges, parent.id, node.id);
+  updateSubtreePosition(parent, offset, 0, nodes, edges);
+
+  siblings.forEach((sibling) => {
+    updateSubtreePosition(sibling, offset, 0, nodes, edges);
+  });
+
+  adjustAncestorPositions(parent, offset, nodes, edges, spacing);
 }
 
 function updateSubtreePosition(
@@ -268,6 +302,19 @@ export function getFluxNodeChildren(
   return existingNodes.filter(
     (node) => getFluxNodeParent(existingNodes, existingEdges, node.id)?.id === id
   );
+}
+
+export function getFluxNodeSiblings(
+  existingNodes: Node<ToTNodeData>[],
+  existingEdges: Edge[],
+  parentId: string,
+  nodeId: string
+): Node<ToTNodeData>[] {
+  // Fetch all children of the parent node
+  const siblings = getFluxNodeChildren(existingNodes, existingEdges, parentId);
+
+  // Filter out the node itself to get its siblings
+  return siblings.filter((node) => node.id !== nodeId);
 }
 
 export function getFluxNodeParent(
