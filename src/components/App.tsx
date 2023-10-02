@@ -15,6 +15,7 @@ import { useDebouncedEffect } from "../utils/debounce";
 import { newFluxEdge } from "../utils/fluxEdge";
 import {
   adjustNodePositions,
+  layoutTree,
   getFluxNode,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
@@ -237,12 +238,16 @@ function App() {
 
       setEdges((prevEdges) => {
         setNodes((prevNodes) => {
-          // Adjust positions
-          const adjustedNodes = adjustNodePositions(prevNodes, prevEdges);
+          // Identify the root node. Assuming it's the first in the list for this example.
+          const rootNode = prevNodes[0];
 
-          return adjustedNodes;
+          // Adjust positions
+          layoutTree(rootNode, prevNodes, prevEdges);
+
+          // Since layoutTree modifies the tree in-place, the prevNodes array should now be updated.
+          return [...prevNodes]; // Return a shallow copy to trigger re-render
         });
-        return prevEdges;
+        return [...prevEdges]; // Return a shallow copy if you've made adjustments to edges, otherwise just return prevEdges
       });
 
       return newNode;

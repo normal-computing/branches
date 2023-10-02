@@ -139,6 +139,67 @@ function updateSubtreePosition(
   );
 }
 
+// Assume Node has attributes position: {x: number, y: number}
+export function layoutTree(
+  root: Node,
+  nodes: Node[],
+  edges: Edge[],
+  x = 0,
+  y = 0,
+  spacing = 200
+) {
+  // Assign position to the root
+  root.position = { x, y };
+
+  // Find the children of the root
+  const children = getFluxNodeChildren(nodes, edges, root.id);
+
+  // If no children, we are done
+  if (children.length === 0) return;
+
+  let subtreeWidths = new Array(children.length).fill(0);
+
+  // First, recursively layout each subtree rooted at each child
+  children.forEach((child, i) => {
+    layoutTree(child, nodes, edges, 0, y + spacing, spacing);
+    subtreeWidths[i] = getSubtreeWidth(child, nodes, edges, spacing);
+  });
+
+  // Calculate total width required for this level
+  const totalWidth =
+    subtreeWidths.reduce((a, b) => a + b, 0) + (children.length - 1) * spacing;
+
+  // Center children relative to the root node
+  let currentX = x - totalWidth / 2;
+
+  children.forEach((child, i) => {
+    // Align the subtree rooted at child to currentX
+    const offsetX = currentX - child.position.x;
+    updateSubtreePosition(child, offsetX, 0, nodes, edges);
+
+    // Move to the next position
+    currentX += subtreeWidths[i] + spacing;
+  });
+}
+
+function getSubtreeWidth(
+  root: Node,
+  nodes: Node[],
+  edges: Edge[],
+  spacing: number
+): number {
+  const children = getFluxNodeChildren(nodes, edges, root.id);
+  if (children.length === 0) return 0;
+
+  let width = 0;
+  children.forEach((child) => {
+    width += getSubtreeWidth(child, nodes, edges, spacing) + spacing;
+  });
+
+  // We added one extra spacing, remove it
+  return width - spacing;
+}
+
 /*//////////////////////////////////////////////////////////////
                          TRANSFORMERS
 //////////////////////////////////////////////////////////////*/
