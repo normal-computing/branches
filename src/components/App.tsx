@@ -82,6 +82,9 @@ function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  const [filteredNodes, setFilteredNodes] = useState([]);
+  const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
+
   const [inputTokenCount, setInputTokenCount] = useState(0);
   const [outputTokenCount, setOutputTokenCount] = useState(0);
 
@@ -321,6 +324,51 @@ function App() {
       });
     };
 
+    const markAsAnswerPath = (
+      targetNodeId: string,
+      setNodes: SetNodes,
+      setEdges: SetEdges
+    ) => {
+      setEdges((prevEdges) => {
+        const edges = [...prevEdges]; // Make a shallow copy for reference
+        console.log("Edges are:", edges);
+
+        setNodes((prevNodes) => {
+          const markNodeAndAncestors = (nodeId: string, nodes: Node<ToTNodeData>[]) => {
+            let updatedNodes: Node<ToTNodeData>[] = [];
+
+            const nodeToUpdate = nodes.find((node) => node.id === nodeId);
+            if (nodeToUpdate) {
+              const updatedNode = {
+                ...nodeToUpdate,
+                data: { ...nodeToUpdate.data, isInAnswerPath: true },
+              };
+              updatedNodes.push(updatedNode);
+            }
+
+            edges.forEach((edge) => {
+              if (edge.target === nodeId) {
+                updatedNodes = [
+                  ...updatedNodes,
+                  ...markNodeAndAncestors(edge.source, nodes),
+                ];
+              }
+            });
+
+            return updatedNodes;
+          };
+
+          const nodesToUpdate = markNodeAndAncestors(targetNodeId, prevNodes);
+          return prevNodes.map((node) => {
+            const nodeToUpdate = nodesToUpdate.find((n) => n.id === node.id);
+            return nodeToUpdate || node;
+          });
+        });
+
+        return edges; // return the edges as-is since we're not modifying them
+      });
+    };
+
     async function getOutput(node: Node<ToTNodeData>, text: string): Promise<void> {
       const answerNode = createNewNodeAndEdge(
         node,
@@ -352,6 +400,7 @@ function App() {
           const newTokens = countTokens(chars);
           setOutputTokenCount((prevCount) => prevCount + newTokens);
         }
+        markAsAnswerPath(answerNode.id!, setNodes, setEdges);
         updateNodeOutput(answerNode.id!, output);
         // Handle aborting or breaking out of the loop if needed.
       }
@@ -782,9 +831,16 @@ function App() {
     }
   }, [apiKey]);
 
-  // useEffect(() => {
-  //   console.log("Nodes have been updated:", nodes);
-  // }, [nodes]);
+  useEffect(() => {
+    console.log("Nodes have been updated:", nodes);
+  }, [nodes]);
+
+  useEffect(() => {
+    const updatedNodes: Node[] = nodes.filter((node) => node.data?.isInAnswerPath);
+    console.log("updated nodes", updatedNodes);
+    setFilteredNodes(updatedNodes);
+    console.log("new filtered nodes", filteredNodes);
+  }, [nodes]);
 
   const isAnythingSaving = isSavingReactFlow || isSavingSettings;
   const isAnythingLoading = isAnythingSaving || availableModels === null;
@@ -879,6 +935,10 @@ function App() {
 
                     if (MIXPANEL_TOKEN) mixpanel.track("Opened Settings Modal"); // KPI
                   }}
+                  onToggleAnswerFilter={() => {
+                    setShowAnswerPathOnly(!showAnswerPathOnly);
+                  }}
+                  showAnswerPathOnly={showAnswerPathOnly}
                 />
 
                 <Box>
@@ -900,7 +960,7 @@ function App() {
 
               <ReactFlow
                 proOptions={{ hideAttribution: true }}
-                nodes={nodes}
+                nodes={showAnswerPathOnly ? filteredNodes : nodes}
                 maxZoom={1.5}
                 minZoom={0}
                 edges={edges}

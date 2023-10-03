@@ -4,8 +4,12 @@ import { Row } from "../../utils/chakra";
 
 export function NavigationBar({
   onOpenSettingsModal,
+  onToggleAnswerFilter,
+  showAnswerPathOnly,
 }: {
   onOpenSettingsModal: () => void;
+  onToggleAnswerFilter: () => void;
+  showAnswerPathOnly: boolean;
 }) {
   return (
     <Row
@@ -28,6 +32,15 @@ export function NavigationBar({
         onClick={onOpenSettingsModal}
       >
         Settings
+      </Button>
+      <Button
+        variant="ghost"
+        height="80%"
+        px="5px"
+        ml="11px"
+        onClick={onToggleAnswerFilter}
+      >
+        {showAnswerPathOnly ? "Hide Answer Path" : "Show Answer Path"}
       </Button>
     </Row>
   );
