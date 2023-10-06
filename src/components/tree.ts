@@ -8,10 +8,10 @@ export const treeDemoNodes: Node[] = [
     data: {
       id: "0",
       parent_id: "",
-      input: "1 2 3 4",
+      input: "HumanEval/4",
       steps: [],
       output: "",
-      label: "1 2 3 4",
+      label: "HumanEval/4",
       score: 60,
       evals: "",
       isValid: true,

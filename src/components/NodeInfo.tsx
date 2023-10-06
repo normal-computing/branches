@@ -1,5 +1,7 @@
 import { Node, Edge } from "reactflow";
+import HUMAN_EVAL_PROBLEMS from "../utils/human_eval_problems.json";
 import {
+  Text,
   Tag,
   TagLeftIcon,
   TagLabel,
@@ -7,7 +9,9 @@ import {
   List,
   ListItem,
   ListIcon,
+  Input,
   Heading,
+  Flex,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
 import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
@@ -15,6 +19,7 @@ import { Settings, ToTNodeData } from "../utils/types";
 import { Prompt } from "./Prompt";
 import { getFluxNodeParent } from "../utils/fluxNode";
 import { useEffect, useState } from "react";
+import { Markdown } from "./utils/Markdown";
 
 function EvalListItem({ item }: { item: string }) {
   if (item) {
@@ -101,7 +106,7 @@ export function NodeInfo({
         </Tag>
       ) : null}
 
-      <Heading as="h4" size="md">
+      {/* <Heading as="h4" size="md">
         Input
       </Heading>
       {selectedNodeParent || selectedNodeId == null ? (
@@ -114,6 +119,42 @@ export function NodeInfo({
             onPromptType(newText);
           }}
         />
+      )} */}
+
+      <Heading as="h4" size="md">
+        Input
+      </Heading>
+
+      {selectedNodeParent || selectedNodeId == null ? (
+        <p>{selectedNode?.data.input ?? ""}</p>
+      ) : (
+        <Flex
+          alignItems="center"
+          border="1px solid"
+          borderColor="gray.300"
+          borderRadius="md"
+          overflow="hidden"
+        >
+          <Text
+            backgroundColor="gray.100"
+            padding="0.5rem"
+            borderRight="1px solid"
+            borderColor="gray.300"
+          >
+            HumanEval/
+          </Text>
+          <Input
+            type="number"
+            placeholder="Enter number"
+            defaultValue={selectedNode?.data.input.replace("HumanEval/", "")}
+            onChange={(e) => {
+              const newText = "HumanEval/" + e.target.value;
+              onPromptType(newText);
+            }}
+            border="none"
+            _focus={{ boxShadow: "none" }}
+          />
+        </Flex>
       )}
 
       {selectedNode?.data.output && selectedNode?.data.output != "" && (
@@ -124,39 +165,53 @@ export function NodeInfo({
           <p>{selectedNode?.data.output ?? ""}</p>
         </>
       )}
-      <Heading as="h4" size="md">
-        Steps
-      </Heading>
 
-      {lineage && lineage.length >= 1 ? (
-        <Prompt
-          selectNode={selectNode}
-          lineage={lineage}
-          onType={onPromptType}
-          submitPrompt={submitPrompt}
-          apiKey={apiKey}
-        />
-      ) : (
-        <></>
-      )}
-      {selectedNode?.data?.evals && selectedNode?.data?.evals.length > 0 && (
+      {selectedNode?.data?.input &&
+        HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input] &&
+        HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] && (
+          <>
+            <Heading as="h4" size="md">
+              Prompt
+            </Heading>
+            <Markdown
+              text={
+                "```python\n" +
+                HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] +
+                "\n```"
+              }
+            />
+          </>
+        )}
+
+      {lineage && lineage.length >= 1 && (
         <>
-          <Heading as="h4" size="md">
-            Evaluations
-          </Heading>
-          <List className="eval-list" spacing={3}>
-            {selectedNode?.data?.evals?.map((item, i) => {
-              return <EvalListItem key={i} item={item} />;
-            })}
-          </List>
+          {lineage.length == 2 && (
+            <Heading as="h4" size="md">
+              Solution
+            </Heading>
+          )}
+          {lineage.length > 2 && (
+            <Heading as="h4" size="md">
+              Solutions
+            </Heading>
+          )}
+          <Prompt
+            selectNode={selectNode}
+            lineage={lineage}
+            onType={onPromptType}
+            submitPrompt={submitPrompt}
+            apiKey={apiKey}
+          />
         </>
       )}
-      {selectedNode?.data.score && (
+      {selectedNode?.data.error && (
         <>
-          <Heading as="h4" size="md">
-            Evaluation Score
-          </Heading>
-          <p style={{ whiteSpace: "pre-line" }}>{selectedNode?.data.score ?? ""}</p>
+          {
+            <Heading as="h4" size="md">
+              Error
+            </Heading>
+          }
+          <Markdown text={"```\n" + selectedNode?.data.error + "\n```"} />
         </>
       )}
     </div>

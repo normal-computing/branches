@@ -3,6 +3,7 @@ import { ChatCompletionRequestMessage } from "openai-streams";
 import { MAX_AUTOLABEL_CHARS } from "./constants";
 import { Node } from "reactflow";
 import * as nunjucks from "nunjucks";
+import HUMAN_EVAL_PROBLEMS from "./human_eval_problems.json";
 
 export function messageFromNode(
   currNode: Node<ToTNodeData>
@@ -34,6 +35,121 @@ export function messageFromNode(
 
   return messages;
 }
+
+export function humanEvalMessageFromNode(
+  currNode: Node<ToTNodeData>
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+
+  console.log(currNode.data.input);
+  console.log(currNode.data.output);
+  console.log(currNode.data.steps);
+
+  console.log("human eval probs", HUMAN_EVAL_PROBLEMS);
+  console.log("input", currNode.data.input);
+  const prompt: string = HUMAN_EVAL_PROBLEMS[currNode.data.input]["prompt"];
+  console.log("this is the prompt", prompt);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.table(messages);
+
+  return messages;
+}
+
+export function explanationMessage(
+  question: string,
+  answer: string,
+  error: string
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+  const prompt: string = error2explanation(question, answer, error);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.log("explanation message");
+  console.table(messages);
+
+  return messages;
+}
+
+export function regenMessage(
+  question: string,
+  answer: string,
+  error: string,
+  explanation: string
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+  const prompt: string = explanation2code(question, answer, error, explanation);
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.log("regen message");
+  console.table(messages);
+
+  return messages;
+}
+
+const explanation2code = (
+  question: string,
+  answer: string,
+  error: string,
+  explanation: string
+): string => {
+  return `
+    You are a smart and capable agent who can learn from mistakes. Given an incorrect code and its error traceback, correct the completion answer by incorporating the explanation. 
+    Only output the body of the completion answer.
+
+    QUESTION:
+    ----
+    ${question}
+    ----
+    ANSWER:
+    ----
+    ${answer}
+    ----
+    ERROR TRACEBACK:
+    ----
+    ${error}
+    ----
+    EXPLANATION:
+    ----
+    ${explanation}
+    ----
+    ANSWER:
+    ----
+    `;
+};
+
+const error2explanation = (question: string, answer: string, error: string): string => {
+  return `
+    You are a smart and capable agent and can learn from your mistakes. You can correctly debug and code a python program.
+    Only output the explanation of the traceback error so that you can fix the previous answer by rewriting. Do not output code.
+
+    QUESTION:
+    ----
+    ${question}
+    ----
+    ANSWER:
+    ----
+    ${answer}
+    ----
+    ERROR TRACEBACK:
+    ----
+    ${error}
+    ----
+    EXPLANATION:
+    ----
+    `;
+};
 
 export function getCurrentNumbers(val: string): string {
   console.log("val", val);
@@ -329,7 +445,7 @@ function removeInvalidChars(text: string) {
   // a-zA-Z0-9: letters and numbers
   // .,?!: common punctuation marks
   // \s: whitespace characters (space, tab, newline, etc.)
-  const regex = /[^a-zA-Z0-9.,'?!-\s+=*\/<>():]+/g;
+  const regex = /[^a-zA-Z0-9.,'?!-\s+=*\/<>():%_{}[\]&|^~@;#$]+/g;
 
   // Replace `\n` with spaces and remove invalid characters
   const cleanedStr = text.replaceAll("\n", " ").replace(regex, "");

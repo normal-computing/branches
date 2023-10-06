@@ -17,6 +17,7 @@ export function getFluxNodeColor(
   isAnswer: boolean,
   isRunning: boolean,
   isTerminal: boolean,
+  isValid: boolean,
   score: number
 ) {
   if (isAnswer) {
@@ -28,10 +29,9 @@ export function getFluxNodeColor(
   if (isTerminal) {
     return "#e9d8fd";
   }
-  // if (!isValid)
-  // {
-  //   return "#f7d0a1";
-  // }
+  if (!isValid) {
+    return "#f7d0a1";
+  }
 
   const opacity = Math.min(Math.max(score / 60, 0.2), 1); // constrain opacity between 0.2 and 1
   return `rgba(217, 243, 214, ${opacity})`; // RGBA for #d9f3d6 with varying opacity

@@ -14,7 +14,6 @@ import {
 import { useDebouncedEffect } from "../utils/debounce";
 import { newFluxEdge } from "../utils/fluxEdge";
 import {
-  adjustNodePositions,
   layoutTree,
   getFluxNode,
   newFluxNode,
@@ -29,10 +28,9 @@ import { useLocalStorage } from "../utils/lstore";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
 import {
-  cotMessageFromNode,
-  evalMessageFromText,
-  messageFromNode,
-  parseAndCompute,
+  explanationMessage,
+  humanEvalMessageFromNode,
+  regenMessage,
 } from "../utils/prompt";
 import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
@@ -48,6 +46,7 @@ import { OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
+import HUMAN_EVAL_PROBLEMS from "../utils/human_eval_problems.json";
 
 import ReactFlow, {
   addEdge,
@@ -197,13 +196,8 @@ function App() {
     const model = settings.model;
     const parentNode = selectedNodeLineage[0];
     const submittedNode = getFluxNode(nodes, parentNode.id)!;
-    const streamId = generateStreamId();
-    let foundTerminal = false;
+
     console.log("current node", submittedNode);
-
-    const DECODER = new TextDecoder();
-
-    const abortController = new AbortController();
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -213,7 +207,8 @@ function App() {
       newFluxNode: (node: Partial<Node>) => Node,
       newFluxEdge: (node: Partial<Edge>) => Edge,
       setNodes: SetNodes,
-      setEdges: SetEdges
+      setEdges: SetEdges,
+      streamId: string
     ) => {
       const currentChildNodeId = generateNodeId();
 
@@ -267,6 +262,7 @@ function App() {
                   false,
                   false,
                   node.data.isTerminal,
+                  node.data.error == null,
                   node.data.score
                 ),
               },
@@ -299,234 +295,84 @@ function App() {
       return nonEmptyTokens.length;
     }
 
-    // Function to update node with ID `nodeId` in the node array
-    const updateNodeOutput = (nodeId: string, newOutput: string) => {
-      setNodes((prevNodes: Node[]) => {
-        return prevNodes.map((node) => {
+    const addError = (nodeId: string, error: any, setNodes: SetNodes) => {
+      setNodes((prevNodes: Node<ToTNodeData>[]) => {
+        const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
             return {
               ...node,
               data: {
                 ...node.data,
-                text: node.data.text,
-                label: node.data.text + "\n\n" + newOutput,
-                output: newOutput, // This assumes 'output' is a field in the data object,
-                isTerminal: true,
-                isRunning: true,
-              },
-              style: {
-                background: getFluxNodeColor(false, true, true, 0),
+                error: error, // Add the error to the node data
               },
             };
           }
           return node;
         });
+        return newNodes;
       });
     };
 
-    const markAsAnswerPath = (
-      targetNodeId: string,
-      setNodes: SetNodes,
-      setEdges: SetEdges
-    ) => {
-      setEdges((prevEdges) => {
-        const edges = [...prevEdges]; // Make a shallow copy for reference
-        console.log("Edges are:", edges);
+    // async function createExplanationNode(node: Node<ToTNodeData>) {
+    //   generateChild(node);
+    //   let ex_prompt = error2explanation(q1, answer, jsonResponse.result.result);
+    //   let explanation = (await llm(ex_prompt, 1)) as string;
+    //   console.log(explanation);
+    //   let ans_prompt = explanation2code(
+    //     q1,
+    //     answer,
+    //     jsonResponse.result.result,
+    //     explanation
+    //   );
+    //   let re_ans = (await llm(ans_prompt, 1)) as string;
+    //   console.log(re_ans);
+    // }
 
-        setNodes((prevNodes) => {
-          const markNodeAndAncestors = (nodeId: string, nodes: Node<ToTNodeData>[]) => {
-            let updatedNodes: Node<ToTNodeData>[] = [];
+    async function executeInterpreter(node: Node<ToTNodeData>) {
+      let data = {
+        problem: HUMAN_EVAL_PROBLEMS[node.data.input],
+        completion: node.data.steps[0],
+      };
 
-            const nodeToUpdate = nodes.find((node) => node.id === nodeId);
-            if (nodeToUpdate) {
-              const updatedNode = {
-                ...nodeToUpdate,
-                data: { ...nodeToUpdate.data, isInAnswerPath: true },
-              };
-              updatedNodes.push(updatedNode);
-            }
+      console.log("node completion", node.data.steps[0]);
+      console.log("data", JSON.stringify(data));
 
-            edges.forEach((edge) => {
-              if (edge.target === nodeId) {
-                updatedNodes = [
-                  ...updatedNodes,
-                  ...markNodeAndAncestors(edge.source, nodes),
-                ];
-              }
-            });
-
-            return updatedNodes;
-          };
-
-          const nodesToUpdate = markNodeAndAncestors(targetNodeId, prevNodes);
-          return prevNodes.map((node) => {
-            const nodeToUpdate = nodesToUpdate.find((n) => n.id === node.id);
-            return nodeToUpdate || node;
-          });
-        });
-
-        return edges; // return the edges as-is since we're not modifying them
-      });
-    };
-
-    async function getOutput(node: Node<ToTNodeData>, text: string): Promise<void> {
-      const answerNode = createNewNodeAndEdge(
-        node,
-        newFluxNode,
-        newFluxEdge,
-        setNodes,
-        setEdges
-      );
-
-      const messages = cotMessageFromNode(node, text);
-      const newInputTokens = countTokens(messages[0]["content"]);
-      setInputTokenCount((prevCount) => prevCount + newInputTokens);
-      let output = "";
-      const outputStream = await OpenAI(
-        "chat",
-        {
-          model,
-          temperature: temp,
-          messages,
+      // Sending a POST request to the server
+      let url = "http://127.0.0.1:5000/execute"; // Replace with your server's URL
+      let response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "true",
         },
-        { apiKey: apiKey!, mode: "raw" }
-      );
-      for await (const chunk of yieldStream(outputStream, abortController)) {
-        const decoded = JSON.parse(DECODER.decode(chunk));
-        const choice = decoded.choices[0];
-        if (choice.delta?.content) {
-          const chars = choice.delta.content;
-          output += chars;
-          const newTokens = countTokens(chars);
-          setOutputTokenCount((prevCount) => prevCount + newTokens);
-        }
-        markAsAnswerPath(answerNode.id!, setNodes, setEdges);
-        updateNodeOutput(answerNode.id!, output);
-        // Handle aborting or breaking out of the loop if needed.
+        body: JSON.stringify(data),
+      });
+
+      // Parse JSON response
+      let jsonResponse = await response.json();
+      console.log("json response", jsonResponse);
+
+      const passed = jsonResponse["result"]["passed"];
+      console.log("passed", passed);
+
+      if (passed) {
+        handleFinishedNode(node, true);
+      } else {
+        const error = jsonResponse["result"]["result"];
+        addError(node.id, error, setNodes);
+        updateNodeColor(node.id, setNodes);
+        const explanationNode = await generateChild(node, "explanation", error);
+        const regenNode = await generateChild(explanationNode, "regen", error);
       }
-      setNodes((prevNodes: Node[]) => {
-        return prevNodes.map((node) => {
-          if (node.id === answerNode.id!) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                isRunning: false,
-                isTerminal: true,
-              },
-              style: {
-                background: getFluxNodeColor(true, false, true, 0),
-              },
-            };
-          }
-          return node;
-        });
-      });
-      updatePreviousEdge(answerNode.id!, setEdges);
-      // implement stream, update output of node
-    }
-
-    const updateNodeEvals = (nodeId: string, newEvals: string[]) => {
-      setNodes((prevNodes: Node[]) => {
-        return prevNodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                evals: newEvals,
-              },
-            };
-          }
-          return node;
-        });
-      });
-    };
-
-    const updateNodeScore = (nodeId: string, score: number) => {
-      setNodes((prevNodes: Node[]) => {
-        return prevNodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                label: node.data.text + "\n\nScore: " + score.toFixed(1),
-                score,
-              },
-            };
-          }
-          return node;
-        });
-      });
-    };
-
-    async function getEvals(
-      node: Node<ToTNodeData>,
-      N_EVAL: number,
-      text: string
-    ): Promise<{ evals: string[]; score: number }> {
-      const messages = evalMessageFromText(text);
-      const newInputTokens = countTokens(messages[0]["content"]);
-      setInputTokenCount((prevCount) => prevCount + newInputTokens);
-      let allEvals: string[] = [];
-
-      await Promise.all(
-        Array.from({ length: N_EVAL }).map(async (_, i) => {
-          let evalOutput = "";
-          const newStream = await OpenAI(
-            "chat",
-            {
-              model,
-              temperature: temp,
-              messages,
-            },
-            { apiKey: apiKey!, mode: "raw" }
-          );
-
-          for await (const chunk of yieldStream(newStream, abortController)) {
-            const decoded = JSON.parse(DECODER.decode(chunk));
-            const choice = decoded.choices[0];
-            if (choice.delta?.content) {
-              const chars = choice.delta.content;
-              evalOutput += chars;
-              const newTokens = countTokens(chars);
-              setOutputTokenCount((prevCount) => prevCount + newTokens);
-            }
-
-            if (!allEvals[i]) {
-              allEvals[i] = "";
-            }
-            allEvals[i] = evalOutput;
-            updateNodeEvals(node.id!, [...allEvals]);
-          }
-        })
-      );
-      const score = parseAndCompute(allEvals);
-      updateNodeScore(node.id!, score);
-      updateNodeColor(node.id!, setNodes);
-      return { evals: allEvals, score };
     }
 
     async function handleFinishedNode(
       finishedNode: Node<ToTNodeData>,
-      text: string
+      isTerminal: boolean
     ): Promise<Node<ToTNodeData>> {
       let modifiedNode = { ...finishedNode };
-      const isTerminal = checkIfTerminal(text);
-      // node is terminal, solved problem
-      const { evals, score } = await getEvals(finishedNode!, 3, text).catch((err) => {
-        console.error(err);
-        return { evals: [], score: 0 }; // default values in case of an error
-      });
-      modifiedNode.data = {
-        ...modifiedNode.data,
-        evals,
-        score,
-      };
       if (isTerminal) {
         console.log("found terminal node");
-        foundTerminal = true;
         setNodes((prevNodes: Node<ToTNodeData>[]) => {
           const newNodes = prevNodes.map((node) => {
             if (node.id === finishedNode?.id) {
@@ -535,8 +381,9 @@ function App() {
                 style: {
                   background: getFluxNodeColor(
                     false,
-                    true,
+                    false,
                     isTerminal,
+                    true,
                     finishedNode.data.score
                   ),
                 },
@@ -551,8 +398,6 @@ function App() {
           });
           return newNodes;
         });
-
-        await getOutput(finishedNode!, text).catch((err) => console.error(err));
       }
 
       updateNodeColor(finishedNode?.id!, setNodes);
@@ -561,13 +406,33 @@ function App() {
       return modifiedNode;
     }
 
-    async function generateChildren(node: Node): Promise<Node<ToTNodeData>[]> {
-      console.log("new streamId", streamId);
-      let numNewLines = 0;
-      let isFirstNode = true;
-      const newChildren: Node<ToTNodeData>[] = [];
+    async function generateChild(
+      node: Node,
+      nodeType: string,
+      error: string
+    ): Promise<Node<ToTNodeData>> {
+      const DECODER = new TextDecoder();
 
-      const messages = messageFromNode(node);
+      const abortController = new AbortController();
+
+      const streamId = generateStreamId();
+      console.log("new stream id", streamId);
+      let isNewNode = true;
+
+      const question = HUMAN_EVAL_PROBLEMS[node.data.input]["prompt"];
+      let answer = node.data.steps[0];
+      console.log("this is the node we're generating from", node);
+      let explanation = "";
+      if (nodeType == "regen") {
+        explanation = node.data.steps[1];
+      }
+
+      const messages =
+        nodeType == "explanation"
+          ? explanationMessage(question, answer, error)
+          : nodeType == "regen"
+          ? regenMessage(question, answer, error, explanation)
+          : humanEvalMessageFromNode(node);
       const newInputTokens = countTokens(messages[0]["content"]);
       setInputTokenCount((prevCount) => prevCount + newInputTokens);
 
@@ -580,9 +445,8 @@ function App() {
         },
         { apiKey: apiKey!, mode: "raw" }
       );
-      let handlePromises: Promise<Node<ToTNodeData>>[] = []; // Collect promises here
-      let prevText: string = "";
-      let finalText: string = "";
+      let currentText: string = "";
+      let currentChildNode: Node<ToTNodeData> | null = null;
 
       for await (const chunk of yieldStream(stream, abortController)) {
         if (abortController.signal.aborted) break;
@@ -597,46 +461,18 @@ function App() {
             setOutputTokenCount((prevCount) => prevCount + newTokens);
 
             // new node
-            if (isFirstNode || chars.endsWith("\n")) {
-              if (!isFirstNode) {
-                currentText += chars;
-                const prevNode = currentChildNode;
-                prevText = currentText;
-                setNodes((prevNodes: Node<ToTNodeData>[]) => {
-                  return appendTextToFluxNodeAsGPT(prevNodes, {
-                    id: prevNode?.id!,
-                    text: prevText,
-                    streamId,
-                  });
-                });
-
-                const promise: Promise<Node<ToTNodeData>> = handleFinishedNode(
-                  prevNode!,
-                  prevText
-                );
-                handlePromises.push(promise);
-
-                if (prevNode!.data.isTerminal) {
-                  foundTerminal = true;
-                  return newChildren;
-                }
-              }
-
+            if (isNewNode) {
               currentChildNode = createNewNodeAndEdge(
                 node,
                 newFluxNode,
                 newFluxEdge,
                 setNodes,
-                setEdges
+                setEdges,
+                streamId
               );
-              isFirstNode = false;
-              numNewLines++;
-              currentText = chars;
-            } else {
-              currentText += chars;
+              isNewNode = false;
             }
-
-            finalText = currentText;
+            currentText += chars;
 
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
               return appendTextToFluxNodeAsGPT(prevNodes, {
@@ -645,10 +481,6 @@ function App() {
                 streamId,
               });
             });
-
-            if (chars.endsWith("\n")) {
-              currentText = "";
-            }
 
             // We cannot return within the loop, and we do
             // not want to execute the code below, so we break.
@@ -659,60 +491,23 @@ function App() {
         }
       }
 
-      const finalHandlePromise: Promise<Node<ToTNodeData>> = handleFinishedNode(
+      const finalChild: Node<ToTNodeData> = await handleFinishedNode(
         currentChildNode!,
-        finalText
+        false
       );
-      handlePromises.push(finalHandlePromise);
-      const finishedNodes = await Promise.all(handlePromises);
-      newChildren.push(...finishedNodes);
-      if (currentChildNode!.data.isTerminal && currentChildNode!.data.isTerminal) {
-        foundTerminal = true;
-        return newChildren;
-      }
-      return newChildren;
+      return finalChild;
     }
 
-    async function generateLevelChildren(nodes: Node[]): Promise<Node<ToTNodeData>[]> {
-      try {
-        const flattenedChildren: Node<ToTNodeData>[] = [];
+    const N_ANSWER_FANOUT = 10; // TODO: can be adjusted
 
-        for (const node of nodes) {
-          const children = await generateChildren(node);
-          flattenedChildren.push(...children);
-        }
+    const promises = Array(N_ANSWER_FANOUT)
+      .fill(null)
+      .map(async () => {
+        return await generateChild(submittedNode, "normal", "");
+      });
 
-        return flattenedChildren;
-      } catch (error) {
-        console.error("Error generating level children: ", error);
-        return [];
-      }
-    }
-
-    let currentText = "";
-    let currentChildNode: Node<ToTNodeData> | null = null;
-
-    // TODO: N_BEST usually 5, but 3 makes more sense to me for speed, 4th best or 5th best probably bad
-    const N_BEST = 10; // max nodes in queue TODO
-    //const N_STEPS = 2; // how many times to go through queue again
-
-    let currentNodes: Node<ToTNodeData>[] = [submittedNode];
-    let step = 0;
-    const N_STEP = submittedNode.data.input.split(/\s+/).length - 1; // TODO: this is just the number of nodes
-    const K = 4;
-
-    while (currentNodes.some((node) => !node.data.isTerminal) && step < N_STEP) {
-      const nonTerminalNodes = currentNodes.filter((node) => !node.data.isTerminal);
-      nonTerminalNodes.sort((a, b) => b.data.score - a.data.score);
-      const topKNodes = nonTerminalNodes.slice(0, K);
-      if (topKNodes.length === 0) break;
-
-      const levelChildren: Node<ToTNodeData>[] = await generateLevelChildren(topKNodes);
-      currentNodes = levelChildren;
-
-      autoZoomIfNecessary();
-      step++;
-    }
+    const children = await Promise.all(promises);
+    children.forEach(executeInterpreter);
 
     autoZoomIfNecessary();
 
@@ -832,14 +627,8 @@ function App() {
   }, [apiKey]);
 
   useEffect(() => {
-    console.log("Nodes have been updated:", nodes);
-  }, [nodes]);
-
-  useEffect(() => {
     const updatedNodes: Node[] = nodes.filter((node) => node.data?.isInAnswerPath);
-    console.log("updated nodes", updatedNodes);
     setFilteredNodes(updatedNodes);
-    console.log("new filtered nodes", filteredNodes);
   }, [nodes]);
 
   const isAnythingSaving = isSavingReactFlow || isSavingSettings;
