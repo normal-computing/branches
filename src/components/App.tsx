@@ -947,6 +947,10 @@ function App() {
                   <p>Output Token Count: {outputTokenCount}</p>
                 </Box>
 
+                <Box>
+                  <p>Total Cost (GPT-4): ${((inputTokenCount * 0.03 / 1000) + (outputTokenCount * 0.06 / 1000)).toFixed(2)}</p>
+                </Box>
+
                 <Box ml="20px">
                   {isAnythingLoading ? (
                     <Spinner size="sm" mt="6px" color={"#404040"} />
