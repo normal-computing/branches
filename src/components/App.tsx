@@ -328,7 +328,10 @@ function App() {
     //   console.log(re_ans);
     // }
 
-    async function executeInterpreter(node: Node<ToTNodeData>) {
+    async function executeInterpreter(
+      node: Node<ToTNodeData>,
+      finalNode: boolean
+    ): Promise<Node<ToTNodeData>[] | null> {
       let data = {
         problem: HUMAN_EVAL_PROBLEMS[node.data.input],
         completion: node.data.steps[0],
@@ -357,12 +360,33 @@ function App() {
 
       if (passed) {
         handleFinishedNode(node, true);
+        return null;
       } else {
         const error = jsonResponse["result"]["result"];
         addError(node.id, error, setNodes);
         updateNodeColor(node.id, setNodes);
-        const explanationNode = await generateChild(node, "explanation", error);
-        const regenNode = await generateChild(explanationNode, "regen", error);
+
+        if (!finalNode) {
+          const N_EXPLANATION_FANOUT = 3; // TODO: can be adjusted
+
+          const explanationPromises = Array(N_EXPLANATION_FANOUT)
+            .fill(null)
+            .map(async () => {
+              return await generateChild(node, "explanation", error);
+            });
+
+          const explanationChildren = await Promise.all(explanationPromises);
+
+          const regenChildrenPromises = explanationChildren.map(
+            async (explanationNode) => {
+              // Assuming that `error` is available in the current scope
+              return await generateChild(explanationNode, "regen", error);
+            }
+          );
+
+          return Promise.all(regenChildrenPromises);
+        }
+        return null;
       }
     }
 
@@ -498,7 +522,7 @@ function App() {
       return finalChild;
     }
 
-    const N_ANSWER_FANOUT = 10; // TODO: can be adjusted
+    const N_ANSWER_FANOUT = 5; // TODO: can be adjusted
 
     const promises = Array(N_ANSWER_FANOUT)
       .fill(null)
@@ -507,7 +531,24 @@ function App() {
       });
 
     const children = await Promise.all(promises);
-    children.forEach(executeInterpreter);
+    // children.forEach(executeInterpreter);
+
+    const interpretChildrenPromises = children.map(async (child) => {
+      // Assuming that `error` is available in the current scope
+      return await executeInterpreter(child, false);
+    });
+
+    const regenChildren = await Promise.all(interpretChildrenPromises);
+
+    if (regenChildren) {
+      const combinedRegenChildren = regenChildren.flatMap((childArray) =>
+        childArray !== null ? childArray : []
+      );
+
+      combinedRegenChildren.map(async (regenChild) => {
+        return await executeInterpreter(regenChild, true);
+      });
+    }
 
     autoZoomIfNecessary();
 

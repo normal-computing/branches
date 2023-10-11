@@ -183,14 +183,25 @@ export function NodeInfo({
           </>
         )}
 
+      {selectedNode?.data.error && (
+        <>
+          {
+            <Heading as="h4" size="md">
+              Error
+            </Heading>
+          }
+          <Markdown text={"```\n" + selectedNode?.data.error + "\n```"} />
+        </>
+      )}
+
       {lineage && lineage.length >= 1 && (
         <>
-          {lineage.length == 2 && (
+          {lineage.length > 1 && (
             <Heading as="h4" size="md">
               Solution
             </Heading>
           )}
-          {lineage.length > 2 && (
+          {lineage.length > 3 && (
             <Heading as="h4" size="md">
               Solutions
             </Heading>
@@ -202,16 +213,6 @@ export function NodeInfo({
             submitPrompt={submitPrompt}
             apiKey={apiKey}
           />
-        </>
-      )}
-      {selectedNode?.data.error && (
-        <>
-          {
-            <Heading as="h4" size="md">
-              Error
-            </Heading>
-          }
-          <Markdown text={"```\n" + selectedNode?.data.error + "\n```"} />
         </>
       )}
     </div>

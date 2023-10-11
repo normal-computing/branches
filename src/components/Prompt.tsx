@@ -6,7 +6,7 @@ import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
 import { Markdown } from "./utils/Markdown";
 import { NotAllowedIcon } from "@chakra-ui/icons";
-import { Spinner, Button } from "@chakra-ui/react";
+import { Spinner, Button, Heading } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
 import { useState, useEffect, useRef } from "react";
 import { Node, useReactFlow } from "reactflow";
@@ -65,12 +65,27 @@ export function Prompt({
                               APP
   //////////////////////////////////////////////////////////////*/
 
+  console.log("lineage", lineage);
+
+  let slicedLineage;
+
+  if (lineage.length === 2) {
+    slicedLineage = lineage.slice(0, 1);
+  } else if (lineage.length === 3) {
+    slicedLineage = lineage.slice(1);
+  } else if (lineage.length === 4) {
+    slicedLineage = [...lineage.slice(0, 1), ...lineage.slice(2)];
+    slicedLineage = slicedLineage;
+  } else {
+    slicedLineage = lineage;
+  }
+
   return (
     <>
       {lineage.length > 1 &&
-        lineage
-          .slice(0, lineage.length - 1)
+        slicedLineage
           .reverse()
+          .slice(lineage.length > 2 ? 1 : 0)
           .map((node, i) => {
             const isLast = i === lineage.length - 1;
 
@@ -143,6 +158,15 @@ export function Prompt({
             Generate children nodes
           </BigButton>
         </Row>
+      )}
+      {lineage.length > 2 && (
+        <>
+          <Heading as="h4" size="md">
+            Explanation
+          </Heading>
+
+          <Markdown text={"```\n" + lineage[lineage.length - 3].data.text + "\n```"} />
+        </>
       )}
     </>
   );
