@@ -22,7 +22,6 @@ export function messageFromNode(
     currNumsStr = getCurrentNumbers(currNode.data.steps[currNode.data.steps.length - 1]);
     // Assuming getCurrentNumbers has been defined in TypeScript as shared before
   }
-  console.log("curr num str", currNumsStr);
   let prompt = proposePrompt(currNumsStr);
   console.log("this is the prompt", prompt);
 
@@ -41,14 +40,8 @@ export function humanEvalMessageFromNode(
 ): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];
 
-  console.log(currNode.data.input);
-  console.log(currNode.data.output);
-  console.log(currNode.data.steps);
-
-  console.log("human eval probs", HUMAN_EVAL_PROBLEMS);
-  console.log("input", currNode.data.input);
   const prompt: string = HUMAN_EVAL_PROBLEMS[currNode.data.input]["prompt"];
-  console.log("this is the prompt", prompt);
+  console.log("this is the human eval prompt", prompt);
 
   messages.push({
     role: "user",

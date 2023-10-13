@@ -208,23 +208,48 @@ function App() {
       newFluxEdge: (node: Partial<Edge>) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges,
-      streamId: string
+      streamId: string,
+      isSolutionNode: boolean,
+      callback: (newNode: Node) => void
     ) => {
+      console.log("calling create new node and edge");
       const currentChildNodeId = generateNodeId();
 
-      const newNode = newFluxNode({
-        id: currentChildNodeId,
-        x: currentNode.position.x + 10, // initially set x to parent's x (adjustNodePositions will handle final x)
-        y: currentNode.position.y + 100,
-        fluxNodeType: FluxNodeType.GPT,
-        input: currentNode.data.input,
-        text: "",
-        streamId,
-        steps: [...currentNode.data.steps, ""],
-        style: { background: getFluxNodeColor(false, true, false, 0) },
+      setNodes((prevNodes: Node[]) => {
+        console.log("setting nodes");
+        const matchingNode = prevNodes.find((n) => n.id === currentNode.id);
+        if (!matchingNode) {
+          throw new Error("Node not found");
+        }
+
+        console.log("prev node errors", matchingNode.data.errors);
+        console.log("prev node explanations", matchingNode.data.explanations);
+
+        // Create a new node using the currentErrors
+        const newNode = newFluxNode({
+          id: currentChildNodeId,
+          x: matchingNode.position.x + 10,
+          y: matchingNode.position.y + 100,
+          fluxNodeType: FluxNodeType.GPT,
+          input: matchingNode.data.input,
+          text: "",
+          streamId,
+          steps: [...matchingNode.data.steps, ""],
+          solutions: isSolutionNode
+            ? [...matchingNode.data.solutions, ""]
+            : [...matchingNode.data.solutions],
+          style: { background: getFluxNodeColor(false, true, false, true, 0) },
+          errors: [...matchingNode.data.errors],
+          explanations: isSolutionNode
+            ? [...matchingNode.data.explanations]
+            : [...matchingNode.data.explanations, ""],
+        });
+
+        callback(newNode);
+
+        return [...prevNodes, newNode];
       });
 
-      setNodes((prevNodes: Node[]) => [...prevNodes, newNode]);
       setEdges((prevEdges) => [
         ...prevEdges,
         newFluxEdge({
@@ -247,8 +272,6 @@ function App() {
         });
         return [...prevEdges]; // Return a shallow copy if you've made adjustments to edges, otherwise just return prevEdges
       });
-
-      return newNode;
     };
 
     const updateNodeColor = (nodeId: string, setNodes: SetNodes) => {
@@ -262,7 +285,7 @@ function App() {
                   false,
                   false,
                   node.data.isTerminal,
-                  node.data.error == null,
+                  !node.data.errors || node.data.errors.length == 0,
                   node.data.score
                 ),
               },
@@ -295,15 +318,16 @@ function App() {
       return nonEmptyTokens.length;
     }
 
-    const addError = (nodeId: string, error: any, setNodes: SetNodes) => {
+    const addError = (nodeId: string, error: string, setNodes: SetNodes) => {
       setNodes((prevNodes: Node<ToTNodeData>[]) => {
         const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
+            const existingErrors = node.data.errors || []; // Initialize to empty array if it doesn't exist
             return {
               ...node,
               data: {
                 ...node.data,
-                error: error, // Add the error to the node data
+                errors: [...existingErrors, error], // Append the new error to the existing array
               },
             };
           }
@@ -312,21 +336,6 @@ function App() {
         return newNodes;
       });
     };
-
-    // async function createExplanationNode(node: Node<ToTNodeData>) {
-    //   generateChild(node);
-    //   let ex_prompt = error2explanation(q1, answer, jsonResponse.result.result);
-    //   let explanation = (await llm(ex_prompt, 1)) as string;
-    //   console.log(explanation);
-    //   let ans_prompt = explanation2code(
-    //     q1,
-    //     answer,
-    //     jsonResponse.result.result,
-    //     explanation
-    //   );
-    //   let re_ans = (await llm(ans_prompt, 1)) as string;
-    //   console.log(re_ans);
-    // }
 
     async function executeInterpreter(
       node: Node<ToTNodeData>,
@@ -372,7 +381,7 @@ function App() {
           const explanationPromises = Array(N_EXPLANATION_FANOUT)
             .fill(null)
             .map(async () => {
-              return await generateChild(node, "explanation", error);
+              return await generateChild(node, "explanation", error, false);
             });
 
           const explanationChildren = await Promise.all(explanationPromises);
@@ -380,7 +389,7 @@ function App() {
           const regenChildrenPromises = explanationChildren.map(
             async (explanationNode) => {
               // Assuming that `error` is available in the current scope
-              return await generateChild(explanationNode, "regen", error);
+              return await generateChild(explanationNode, "regen", error, true);
             }
           );
 
@@ -433,8 +442,10 @@ function App() {
     async function generateChild(
       node: Node,
       nodeType: string,
-      error: string
+      error: string,
+      isSolutionNode: boolean
     ): Promise<Node<ToTNodeData>> {
+      console.log("generating from this node", node);
       const DECODER = new TextDecoder();
 
       const abortController = new AbortController();
@@ -486,24 +497,32 @@ function App() {
 
             // new node
             if (isNewNode) {
-              currentChildNode = createNewNodeAndEdge(
+              createNewNodeAndEdge(
                 node,
                 newFluxNode,
                 newFluxEdge,
                 setNodes,
                 setEdges,
-                streamId
+                streamId,
+                isSolutionNode,
+                (newNode) => {
+                  currentChildNode = newNode;
+                }
               );
               isNewNode = false;
             }
             currentText += chars;
 
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
-              return appendTextToFluxNodeAsGPT(prevNodes, {
-                id: currentChildNode?.id!,
-                text: currentText,
-                streamId,
-              });
+              return appendTextToFluxNodeAsGPT(
+                prevNodes,
+                {
+                  id: currentChildNode?.id!,
+                  text: currentText,
+                  streamId,
+                },
+                isSolutionNode
+              );
             });
 
             // We cannot return within the loop, and we do
@@ -527,7 +546,7 @@ function App() {
     const promises = Array(N_ANSWER_FANOUT)
       .fill(null)
       .map(async () => {
-        return await generateChild(submittedNode, "normal", "");
+        return await generateChild(submittedNode, "normal", "", true);
       });
 
     const children = await Promise.all(promises);

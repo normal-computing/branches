@@ -65,31 +65,20 @@ export function Prompt({
                               APP
   //////////////////////////////////////////////////////////////*/
 
-  console.log("lineage", lineage);
-
-  let slicedLineage;
-
-  if (lineage.length === 2) {
-    slicedLineage = lineage.slice(0, 1);
-  } else if (lineage.length === 3) {
-    slicedLineage = lineage.slice(1);
-  } else if (lineage.length === 4) {
-    slicedLineage = [...lineage.slice(0, 1), ...lineage.slice(2)];
-    slicedLineage = slicedLineage;
-  } else {
-    slicedLineage = lineage;
-  }
-
   return (
     <>
       {lineage.length > 1 &&
-        slicedLineage
+        lineage
+          .slice(0, lineage.length - 1)
           .reverse()
-          .slice(lineage.length > 2 ? 1 : 0)
           .map((node, i) => {
             const isLast = i === lineage.length - 1;
 
             const data = node.data;
+            const errors = data.errors || [];
+            const explanations = data.explanations || [];
+            console.log("lineage", lineage);
+            console.log("these are the explanations", explanations);
 
             return (
               <>
@@ -132,6 +121,30 @@ export function Prompt({
                       }
                     >
                       <Markdown text={"```python\n" + data.text + "\n```"} />
+                      {errors[i] && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            marginBottom: "20px",
+                            color: "red",
+                          }}
+                        >
+                          <strong>Error:</strong>
+                          <Markdown text={"```\n" + errors[i] + "\n```"} />
+                        </div>
+                      )}
+                      {explanations[i] && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            marginBottom: "20px",
+                            color: "green",
+                          }}
+                        >
+                          <strong>Explanation:</strong>
+                          <Markdown text={"```\n" + explanations[i] + "\n```"} />
+                        </div>
+                      )}
                     </Column>
                   </>
                 )}
@@ -158,15 +171,6 @@ export function Prompt({
             Generate children nodes
           </BigButton>
         </Row>
-      )}
-      {lineage.length > 2 && (
-        <>
-          <Heading as="h4" size="md">
-            Explanation
-          </Heading>
-
-          <Markdown text={"```\n" + lineage[lineage.length - 3].data.text + "\n```"} />
-        </>
       )}
     </>
   );

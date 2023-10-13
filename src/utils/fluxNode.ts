@@ -19,7 +19,10 @@ export function newFluxNode({
   text,
   streamId,
   steps,
+  solutions,
   style,
+  errors,
+  explanations,
 }: {
   id?: string;
   x: number;
@@ -29,7 +32,10 @@ export function newFluxNode({
   text: string;
   streamId?: string;
   steps: string[];
+  solutions?: string[];
   style: any;
+  errors: string[];
+  explanations: string[];
 }): Node<ToTNodeData> {
   return {
     id: id ?? generateNodeId(),
@@ -40,8 +46,11 @@ export function newFluxNode({
     data: {
       label: text,
       fluxNodeType,
+      errors,
       input,
       steps,
+      solutions: solutions ?? [],
+      explanations: explanations ?? [],
       streamId,
       text,
     },
@@ -302,31 +311,31 @@ export function checkIfTerminal(text: string): boolean {
 
 export function appendTextToFluxNodeAsGPT(
   existingNodes: Node<ToTNodeData>[],
-  { id, text, streamId }: { id: string; text: string; streamId: string }
+  { id, text, streamId }: { id: string; text: string; streamId: string },
+  isSolutionNode: boolean // Add this argument
 ): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
 
-    // If the node's streamId is now undefined, the stream has been canceled.
     if (node.data.streamId === undefined) throw new Error(STREAM_CANCELED_ERROR_MESSAGE);
-
-    // If the node's streamId is not undefined but does
-    // not match the provided id, the stream is now stale.
     if (node.data.streamId !== streamId) throw new Error(STALE_STREAM_ERROR_MESSAGE);
 
     const copy = { ...node, data: { ...node.data } };
-
     const isFirstToken = copy.data.text.length === 0;
 
     copy.data.text = text;
     copy.data.label = text;
     copy.data.steps[copy.data.steps.length - 1] = text;
 
-    // Preserve custom labels
-    if (copy.data.hasCustomlabel) return copy;
+    // Update the last element in the solutions array if isSolutionNode is true
+    if (isSolutionNode) {
+      copy.data.solutions[copy.data.solutions.length - 1] = text;
+    } else {
+      copy.data.explanations[copy.data.explanations.length - 1] = text;
+    }
 
-    // If label hasn't reached max length or it's a new prompt, set from text.
-    // Once label reaches max length, truncate it.
+    if (copy.data.hasCustomLabel) return copy;
+
     if (!copy.data.label.endsWith(" ...") || isFirstToken) {
       copy.data.label = formatAutoLabel(copy.data.text);
     }

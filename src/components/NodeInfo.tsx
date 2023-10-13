@@ -183,17 +183,6 @@ export function NodeInfo({
           </>
         )}
 
-      {selectedNode?.data.error && (
-        <>
-          {
-            <Heading as="h4" size="md">
-              Error
-            </Heading>
-          }
-          <Markdown text={"```\n" + selectedNode?.data.error + "\n```"} />
-        </>
-      )}
-
       {lineage && lineage.length >= 1 && (
         <>
           {lineage.length > 1 && (

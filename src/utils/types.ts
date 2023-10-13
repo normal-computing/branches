@@ -11,15 +11,17 @@ type FluxNodeData = {
 };
 
 export type ToTNodeData = FluxNodeData & {
-  input: string;
-  output: string;
-  score: number;
-  steps: string[];
-  error: string;
+  errors: string[];
   evals: string[];
+  explanations: string[];
+  input: string;
   isInAnswerPath: boolean;
   isTerminal: boolean;
   isValid: boolean;
+  output: string;
+  score: number;
+  solutions: string[];
+  steps: string[];
 };
 
 export enum FluxNodeType {
