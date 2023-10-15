@@ -12,21 +12,17 @@ import { useState, useEffect, useRef } from "react";
 import { Node, useReactFlow } from "reactflow";
 
 export function Prompt({
-  lineage,
   submitPrompt,
-  selectNode,
+  selectedNode,
 }: {
-  lineage: Node<ToTNodeData>[];
-  onType: (text: string) => void;
   submitPrompt: () => Promise<void>;
-  selectNode: (id: string) => void;
-  apiKey: string | null;
+  selectedNode: (id: string) => void;
 }) {
   const { setNodes } = useReactFlow();
 
-  const promptNode = lineage[0];
+  // const promptNode = lineage[0];
 
-  const promptNodeType = promptNode.data.fluxNodeType;
+  // const promptNodeType = selectedNode.data.fluxNodeType;
 
   const onMainButtonClick = () => {
     submitPrompt();
@@ -35,7 +31,7 @@ export function Prompt({
   const stopGenerating = () => {
     // Reset the stream id.
     setNodes((nodes) =>
-      setFluxNodeStreamId(nodes, { id: promptNode.id, streamId: undefined })
+      setFluxNodeStreamId(nodes, { id: selectedNode.id, streamId: undefined })
     );
 
     if (MIXPANEL_TOKEN) mixpanel.track("Stopped generating response");
@@ -55,11 +51,11 @@ export function Prompt({
 
   // Scroll to the prompt buttons
   // when the bottom node is swapped.
-  useEffect(() => {
-    window.document
-      .getElementById("promptButtons")
-      ?.scrollIntoView(/* { behavior: "smooth" } */);
-  }, [promptNode.id]);
+  // useEffect(() => {
+  //   window.document
+  //     .getElementById("promptButtons")
+  //     ?.scrollIntoView(/* { behavior: "smooth" } */);
+  // }, [selectedNode.id]);
 
   /*//////////////////////////////////////////////////////////////
                               APP
@@ -67,92 +63,91 @@ export function Prompt({
 
   return (
     <>
-      {lineage.length > 1 &&
-        lineage
-          .slice(0, lineage.length - 1)
-          .reverse()
-          .map((node, i) => {
-            const isLast = i === lineage.length - 1;
+      {selectedNode &&
+        selectedNode?.data &&
+        selectedNode.data.solutions.reverse().map((solution, i) => {
+          const data = selectedNode.data;
+          const errors = data.errors || [];
+          const explanations = data.explanations || [];
 
-            const data = node.data;
-            const errors = data.errors || [];
-            const explanations = data.explanations || [];
-            console.log("lineage", lineage);
-            console.log("these are the explanations", explanations);
+          return (
+            <>
+              {data.streamId && data.text === "" ? (
+                <Center expand>
+                  <Spinner />
+                </Center>
+              ) : (
+                <>
+                  <Button
+                    display={hoveredNodeId === selectedNode.id ? "block" : "none"}
+                    onClick={() =>
+                      data.streamId ? stopGenerating() : console.log("no stream ID")
+                    }
+                    position="absolute"
+                    top={1}
+                    right={1}
+                    zIndex={10}
+                    variant="outline"
+                    border="0px"
+                    p={1}
+                    _hover={{ background: "none" }}
+                  >
+                    <NotAllowedIcon boxSize={4} />
+                  </Button>
+                  <Column
+                    width="100%"
+                    marginRight="30px"
+                    whiteSpace="pre-wrap" // Preserve newlines.
+                    mainAxisAlignment="flex-start"
+                    crossAxisAlignment="flex-start"
+                    borderRadius="6px"
+                    wordBreak="break-word"
+                    minHeight={
+                      "75px" // TODO: may be "0px"
+                    }
+                  >
+                    {solution && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          marginBottom: "20px",
+                        }}
+                      >
+                        <Markdown text={"```python\n" + solution + "\n```"} />
+                      </div>
+                    )}
+                    {errors[i] && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          marginBottom: "20px",
+                          color: "red",
+                        }}
+                      >
+                        <strong>Error:</strong>
+                        <Markdown text={"```\n" + errors[i] + "\n```"} />
+                      </div>
+                    )}
+                    {explanations[i] && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          marginBottom: "20px",
+                          color: "green",
+                        }}
+                      >
+                        <strong>Explanation:</strong>
+                        <Markdown text={"```\n" + explanations[i] + "\n```"} />
+                      </div>
+                    )}
+                  </Column>
+                </>
+              )}
+            </>
+          );
+        })}
 
-            return (
-              <>
-                {data.streamId && data.text === "" ? (
-                  <Center expand>
-                    <Spinner />
-                  </Center>
-                ) : (
-                  <>
-                    <Button
-                      display={
-                        hoveredNodeId === promptNode.id && promptNode.id === node.id
-                          ? "block"
-                          : "none"
-                      }
-                      onClick={() =>
-                        data.streamId ? stopGenerating() : console.log("no stream ID")
-                      }
-                      position="absolute"
-                      top={1}
-                      right={1}
-                      zIndex={10}
-                      variant="outline"
-                      border="0px"
-                      p={1}
-                      _hover={{ background: "none" }}
-                    >
-                      <NotAllowedIcon boxSize={4} />
-                    </Button>
-                    <Column
-                      width="100%"
-                      marginRight="30px"
-                      whiteSpace="pre-wrap" // Preserve newlines.
-                      mainAxisAlignment="flex-start"
-                      crossAxisAlignment="flex-start"
-                      borderRadius="6px"
-                      wordBreak="break-word"
-                      minHeight={
-                        data.fluxNodeType === FluxNodeType.User && isLast ? "75px" : "0px"
-                      }
-                    >
-                      <Markdown text={"```python\n" + data.text + "\n```"} />
-                      {errors[i] && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            marginBottom: "20px",
-                            color: "red",
-                          }}
-                        >
-                          <strong>Error:</strong>
-                          <Markdown text={"```\n" + errors[i] + "\n```"} />
-                        </div>
-                      )}
-                      {explanations[i] && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            marginBottom: "20px",
-                            color: "green",
-                          }}
-                        >
-                          <strong>Explanation:</strong>
-                          <Markdown text={"```\n" + explanations[i] + "\n```"} />
-                        </div>
-                      )}
-                    </Column>
-                  </>
-                )}
-              </>
-            );
-          })}
-
-      {lineage.length == 1 && (
+      {
         <Row
           mainAxisAlignment="center"
           crossAxisAlignment="stretch"
@@ -163,7 +158,7 @@ export function Prompt({
           <BigButton
             tooltip=""
             onClick={onMainButtonClick}
-            color={getFluxNodeTypeDarkColor(promptNodeType)}
+            color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
             width="100%"
             height="100%"
             fontSize="lg"
@@ -171,7 +166,7 @@ export function Prompt({
             Generate children nodes
           </BigButton>
         </Row>
-      )}
+      }
     </>
   );
 }

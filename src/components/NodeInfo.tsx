@@ -196,11 +196,9 @@ export function NodeInfo({
             </Heading>
           )}
           <Prompt
-            selectNode={selectNode}
-            lineage={lineage}
-            onType={onPromptType}
+            selectedNode={selectedNode}
             submitPrompt={submitPrompt}
-            apiKey={apiKey}
+            key={selectedNode?.id}
           />
         </>
       )}
