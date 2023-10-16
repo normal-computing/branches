@@ -113,6 +113,7 @@ export function Prompt({
                           marginBottom: "20px",
                         }}
                       >
+                        <strong>Solution</strong>
                         <Markdown text={"```python\n" + solution + "\n```"} />
                       </div>
                     )}
@@ -124,7 +125,7 @@ export function Prompt({
                           color: "red",
                         }}
                       >
-                        <strong>Error:</strong>
+                        <strong>Error</strong>
                         <Markdown text={"```\n" + errors[i] + "\n```"} />
                       </div>
                     )}
@@ -136,7 +137,7 @@ export function Prompt({
                           color: "green",
                         }}
                       >
-                        <strong>Explanation:</strong>
+                        <strong>Explanation</strong>
                         <Markdown text={"```\n" + explanations[i] + "\n```"} />
                       </div>
                     )}

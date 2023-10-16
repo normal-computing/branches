@@ -187,11 +187,6 @@ export function NodeInfo({
         <>
           {lineage.length > 1 && (
             <Heading as="h4" size="md">
-              Solution
-            </Heading>
-          )}
-          {lineage.length > 3 && (
-            <Heading as="h4" size="md">
               Solutions
             </Heading>
           )}
