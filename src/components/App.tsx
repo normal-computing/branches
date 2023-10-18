@@ -547,6 +547,8 @@ function App() {
       });
 
     const children = await Promise.all(promises);
+
+    autoZoomIfNecessary();
     // children.forEach(executeInterpreter);
 
     const interpretChildrenPromises = children.map(async (child) => {
@@ -555,6 +557,8 @@ function App() {
     });
 
     const regenChildren = await Promise.all(interpretChildrenPromises);
+
+    autoZoomIfNecessary();
 
     if (regenChildren) {
       const combinedRegenChildren = regenChildren.flatMap((childArray) =>
