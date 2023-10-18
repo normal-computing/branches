@@ -49,7 +49,7 @@ export const NEW_TREE_CONTENT_QUERY_PARAM = "newTreeWith";
 
 export const UNDEFINED_RESPONSE_STRING = "[UNDEFINED RESPONSE]";
 
-export const FIT_VIEW_SETTINGS = { padding: 0.1, duration: 200 };
+export const FIT_VIEW_SETTINGS = { padding: 0.4, duration: 200 };
 
 export const NEW_TREE_X_OFFSET = 600;
 

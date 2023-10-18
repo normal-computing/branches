@@ -250,6 +250,8 @@ function App() {
         }),
       ]);
 
+      autoZoomIfNecessary();
+
       return newNode;
     };
 
