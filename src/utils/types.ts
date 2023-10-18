@@ -16,6 +16,8 @@ export type ToTNodeData = FluxNodeData & {
   score: number;
   steps: string[];
   evals: string[];
+  expandable: boolean;
+  expanded: boolean;
   isInAnswerPath: boolean;
   isTerminal: boolean;
   isValid: boolean;

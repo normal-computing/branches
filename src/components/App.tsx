@@ -14,8 +14,6 @@ import {
 import { useDebouncedEffect } from "../utils/debounce";
 import { newFluxEdge } from "../utils/fluxEdge";
 import {
-  adjustNodePositions,
-  layoutTree,
   getFluxNode,
   newFluxNode,
   appendTextToFluxNodeAsGPT,
@@ -48,6 +46,8 @@ import { OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
+import useExpandCollapse from "./nodes/useExpandCollapse";
+import useAnimatedNodes from "./nodes/useAnimatedNodes";
 
 import ReactFlow, {
   addEdge,
@@ -55,6 +55,7 @@ import ReactFlow, {
   Connection,
   Node,
   Edge,
+  NodeMouseHandler,
   useEdgesState,
   useNodesState,
   SelectionMode,
@@ -81,6 +82,16 @@ function App() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const treeWidth: number = 300;
+  const treeHeight: number = 150;
+  const animationDuration: number = 200;
+
+  const { nodes: visibleNodes, edges: visibleEdges } = useExpandCollapse(nodes, edges, {
+    treeWidth,
+    treeHeight,
+  });
+  const { nodes: animatedNodes } = useAnimatedNodes(visibleNodes, { animationDuration });
 
   const [filteredNodes, setFilteredNodes] = useState([]);
   const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
@@ -238,20 +249,6 @@ function App() {
           animated: true,
         }),
       ]);
-
-      setEdges((prevEdges) => {
-        setNodes((prevNodes) => {
-          // Identify the root node. Assuming it's the first in the list for this example.
-          const rootNode = prevNodes[0];
-
-          // Adjust positions
-          layoutTree(rootNode, prevNodes, prevEdges);
-
-          // Since layoutTree modifies the tree in-place, the prevNodes array should now be updated.
-          return [...prevNodes]; // Return a shallow copy to trigger re-render
-        });
-        return [...prevEdges]; // Return a shallow copy if you've made adjustments to edges, otherwise just return prevEdges
-      });
 
       return newNode;
     };
@@ -836,8 +833,9 @@ function App() {
   }, [nodes]);
 
   useEffect(() => {
-    const updatedNodes: Node[] = nodes.filter((node) => node.data?.isInAnswerPath);
-    console.log("updated nodes", updatedNodes);
+    const updatedNodes: Node[] = animatedNodes.filter(
+      (node) => node.data?.isInAnswerPath
+    );
     setFilteredNodes(updatedNodes);
     console.log("new filtered nodes", filteredNodes);
   }, [nodes]);
@@ -867,6 +865,25 @@ function App() {
   /*//////////////////////////////////////////////////////////////
                               APP
   //////////////////////////////////////////////////////////////*/
+
+  const onNodeClick: NodeMouseHandler = useCallback(
+    (_, node) => {
+      setSelectedNodeId(node.id);
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === node.id) {
+            return {
+              ...n,
+              data: { ...n.data, expanded: !n.data.expanded },
+            };
+          }
+
+          return n;
+        })
+      );
+    },
+    [setNodes]
+  );
 
   return (
     <>
@@ -959,11 +976,11 @@ function App() {
               </Row>
 
               <ReactFlow
-                proOptions={{ hideAttribution: true }}
-                nodes={showAnswerPathOnly ? filteredNodes : nodes}
+                proOptions={{ account: "paid-pro", hideAttribution: true }}
+                nodes={showAnswerPathOnly ? filteredNodes : animatedNodes}
+                edges={visibleEdges}
                 maxZoom={1.5}
                 minZoom={0}
-                edges={edges}
                 onInit={setReactFlow}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
@@ -985,9 +1002,7 @@ function App() {
                 zoomActivationKeyCode={null}
                 panOnScroll={true}
                 selectionMode={SelectionMode.Partial}
-                onNodeClick={(_, node) => {
-                  setSelectedNodeId(node.id);
-                }}
+                onNodeClick={onNodeClick}
               >
                 <Background />
               </ReactFlow>

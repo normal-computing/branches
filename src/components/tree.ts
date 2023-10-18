@@ -16,6 +16,8 @@ export const treeDemoNodes: Node[] = [
       evals: "",
       isValid: true,
       isTerminal: false,
+      expandable: true,
+      expanded: true,
     },
   },
 ];
