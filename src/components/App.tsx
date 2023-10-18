@@ -75,6 +75,11 @@ function App() {
                         CORE REACT FLOW LOGIC
   //////////////////////////////////////////////////////////////*/
 
+  type NodeWithText = {
+    node: Node<ToTNodeData>;
+    text: string;
+  };
+
   const { setViewport, fitView } = useReactFlow();
 
   const [reactFlow, setReactFlow] = useState<ReactFlowInstance | null>(null);
@@ -336,14 +341,15 @@ function App() {
 
     async function executeInterpreter(
       node: Node<ToTNodeData>,
+      solutionText: string,
       finalNode: boolean
-    ): Promise<Node<ToTNodeData>[] | null> {
+    ): Promise<NodeWithText[] | null> {
       let data = {
         problem: HUMAN_EVAL_PROBLEMS[node.data.input],
-        completion: node.data.steps[0],
+        completion: solutionText,
       };
 
-      console.log("node completion", node.data.steps[0]);
+      console.log("node solution text", solutionText);
       console.log("data", JSON.stringify(data));
 
       // Sending a POST request to the server
@@ -381,16 +387,26 @@ function App() {
               return await generateChild(node, "explanation", error, false);
             });
 
-          const explanationChildren = await Promise.all(explanationPromises);
-
-          const regenChildrenPromises = explanationChildren.map(
-            async (explanationNode) => {
-              // Assuming that `error` is available in the current scope
-              return await generateChild(explanationNode, "regen", error, true);
-            }
+          const explanationChildrenWithText: NodeWithText[] = await Promise.all(
+            explanationPromises
           );
 
-          return Promise.all(regenChildrenPromises);
+          const regenChildrenPromises: Promise<NodeWithText>[] =
+            explanationChildrenWithText.map(async (explanationChildWithText) => {
+              // Assuming that `error` is available in the current scope
+              return await generateChild(
+                explanationChildWithText.node,
+                "regen",
+                error,
+                true
+              );
+            });
+
+          const regenChildrenWithText: NodeWithText[] = await Promise.all(
+            regenChildrenPromises
+          );
+
+          return regenChildrenWithText;
         }
         return null;
       }
@@ -441,7 +457,7 @@ function App() {
       nodeType: string,
       error: string,
       isSolutionNode: boolean
-    ): Promise<Node<ToTNodeData>> {
+    ): Promise<NodeWithText> {
       console.log("generating from this node", node);
       const DECODER = new TextDecoder();
 
@@ -535,7 +551,7 @@ function App() {
         currentChildNode!,
         false
       );
-      return finalChild;
+      return { node: finalChild, text: currentText };
     }
 
     const N_ANSWER_FANOUT = 5; // TODO: can be adjusted
@@ -546,14 +562,12 @@ function App() {
         return await generateChild(submittedNode, "normal", "", true);
       });
 
-    const children = await Promise.all(promises);
+    const childrenWithText = await Promise.all(promises);
 
     autoZoomIfNecessary();
-    // children.forEach(executeInterpreter);
 
-    const interpretChildrenPromises = children.map(async (child) => {
-      // Assuming that `error` is available in the current scope
-      return await executeInterpreter(child, false);
+    const interpretChildrenPromises = childrenWithText.map(async (childWithText) => {
+      return await executeInterpreter(childWithText.node, childWithText.text, false);
     });
 
     const regenChildren = await Promise.all(interpretChildrenPromises);
@@ -565,8 +579,8 @@ function App() {
         childArray !== null ? childArray : []
       );
 
-      combinedRegenChildren.map(async (regenChild) => {
-        return await executeInterpreter(regenChild, true);
+      combinedRegenChildren.map(async (regenChild: NodeWithText) => {
+        return await executeInterpreter(regenChild.node, regenChild.text, true);
       });
     }
 
