@@ -19,6 +19,8 @@ export const treeDemoNodes: Node[] = [
       isTerminal: false,
       errors: [],
       explanations: [],
+      expandable: true,
+      expanded: true,
     },
   },
 ];
