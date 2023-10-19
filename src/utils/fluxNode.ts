@@ -107,6 +107,7 @@ export function modifyFluxNodeText(
           false,
           isRunning,
           copy.data.isTerminal,
+          true,
           copy.data.score
         ),
       };

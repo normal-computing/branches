@@ -14,17 +14,17 @@ export function adjustColor(color: string, amount: number) {
 }
 
 export function getFluxNodeColor(
-  isAnswer: boolean,
+  isExplanation: boolean,
   isRunning: boolean,
   isTerminal: boolean,
   isValid: boolean,
   score: number
 ) {
-  if (isAnswer) {
-    return "#EEEEEE";
-  }
   if (isRunning) {
     return "#c5e2f6";
+  }
+  if (isExplanation) {
+    return "#EEEEEE";
   }
   if (isTerminal) {
     return "#e9d8fd";

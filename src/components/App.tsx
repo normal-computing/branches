@@ -228,18 +228,13 @@ function App() {
       isSolutionNode: boolean,
       callback: (newNode: Node) => void
     ) => {
-      console.log("calling create new node and edge");
       const currentChildNodeId = generateNodeId();
 
       setNodes((prevNodes: Node[]) => {
-        console.log("setting nodes");
         const matchingNode = prevNodes.find((n) => n.id === currentNode.id);
         if (!matchingNode) {
           throw new Error("Node not found");
         }
-
-        console.log("prev node errors", matchingNode.data.errors);
-        console.log("prev node explanations", matchingNode.data.explanations);
 
         // Create a new node using the currentErrors
         const newNode = newFluxNode({
@@ -254,7 +249,7 @@ function App() {
           solutions: isSolutionNode
             ? [...matchingNode.data.solutions, ""]
             : [...matchingNode.data.solutions],
-          style: { background: getFluxNodeColor(false, true, false, true, 0) },
+          style: { background: getFluxNodeColor(!isSolutionNode, true, false, true, 0) },
           errors: [...matchingNode.data.errors],
           explanations: isSolutionNode
             ? [...matchingNode.data.explanations]
@@ -274,9 +269,15 @@ function App() {
           animated: true,
         }),
       ]);
+
+      setTimeout(autoZoomIfNecessary, 500);
     };
 
-    const updateNodeColor = (nodeId: string, setNodes: SetNodes) => {
+    const updateNodeColor = (
+      nodeId: string,
+      setNodes: SetNodes,
+      isExplanation: boolean
+    ) => {
       setNodes((prevNodes: Node<ToTNodeData>[]) => {
         const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
@@ -284,7 +285,7 @@ function App() {
               ...node,
               style: {
                 background: getFluxNodeColor(
-                  false,
+                  isExplanation,
                   false,
                   node.data.isTerminal,
                   !node.data.errors || node.data.errors.length == 0,
@@ -371,7 +372,7 @@ function App() {
       console.log("passed", passed);
 
       if (passed) {
-        handleFinishedNode(node, true);
+        handleFinishedNode(node, true, false);
         return null;
       } else {
         const error = jsonResponse["result"]["result"];
@@ -414,8 +415,11 @@ function App() {
 
     async function handleFinishedNode(
       finishedNode: Node<ToTNodeData>,
-      isTerminal: boolean
+      isTerminal: boolean,
+      isExplanation: boolean
     ): Promise<Node<ToTNodeData>> {
+      console.log("handling node", finishedNode);
+      console.log("is explanation?", isExplanation);
       let modifiedNode = { ...finishedNode };
       if (isTerminal) {
         console.log("found terminal node");
@@ -426,7 +430,7 @@ function App() {
                 ...node,
                 style: {
                   background: getFluxNodeColor(
-                    false,
+                    isExplanation,
                     false,
                     isTerminal,
                     true,
@@ -446,7 +450,7 @@ function App() {
         });
       }
 
-      updateNodeColor(finishedNode?.id!, setNodes);
+      updateNodeColor(finishedNode?.id!, setNodes, isExplanation);
       updatePreviousEdge(finishedNode?.id!, setEdges);
 
       return modifiedNode;
@@ -549,7 +553,8 @@ function App() {
 
       const finalChild: Node<ToTNodeData> = await handleFinishedNode(
         currentChildNode!,
-        false
+        false,
+        nodeType == "explanation"
       );
       return { node: finalChild, text: currentText };
     }
