@@ -413,6 +413,51 @@ function App() {
       }
     }
 
+    const markAsAnswerPath = (
+      targetNodeId: string,
+      setNodes: SetNodes,
+      setEdges: SetEdges
+    ) => {
+      setEdges((prevEdges) => {
+        const edges = [...prevEdges]; // Make a shallow copy for reference
+        console.log("Edges are:", edges);
+
+        setNodes((prevNodes) => {
+          const markNodeAndAncestors = (nodeId: string, nodes: Node<ToTNodeData>[]) => {
+            let updatedNodes: Node<ToTNodeData>[] = [];
+
+            const nodeToUpdate = nodes.find((node) => node.id === nodeId);
+            if (nodeToUpdate) {
+              const updatedNode = {
+                ...nodeToUpdate,
+                data: { ...nodeToUpdate.data, isInAnswerPath: true },
+              };
+              updatedNodes.push(updatedNode);
+            }
+
+            edges.forEach((edge) => {
+              if (edge.target === nodeId) {
+                updatedNodes = [
+                  ...updatedNodes,
+                  ...markNodeAndAncestors(edge.source, nodes),
+                ];
+              }
+            });
+
+            return updatedNodes;
+          };
+
+          const nodesToUpdate = markNodeAndAncestors(targetNodeId, prevNodes);
+          return prevNodes.map((node) => {
+            const nodeToUpdate = nodesToUpdate.find((n) => n.id === node.id);
+            return nodeToUpdate || node;
+          });
+        });
+
+        return edges; // return the edges as-is since we're not modifying them
+      });
+    };
+
     async function handleFinishedNode(
       finishedNode: Node<ToTNodeData>,
       isTerminal: boolean,
@@ -423,6 +468,7 @@ function App() {
       let modifiedNode = { ...finishedNode };
       if (isTerminal) {
         console.log("found terminal node");
+        markAsAnswerPath(finishedNode.id, setNodes, setEdges);
         setNodes((prevNodes: Node<ToTNodeData>[]) => {
           const newNodes = prevNodes.map((node) => {
             if (node.id === finishedNode?.id) {
