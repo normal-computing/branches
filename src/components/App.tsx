@@ -380,9 +380,7 @@ function App() {
         updateNodeColor(node.id, setNodes);
 
         if (!finalNode) {
-          const N_EXPLANATION_FANOUT = 3; // TODO: can be adjusted
-
-          const explanationPromises = Array(N_EXPLANATION_FANOUT)
+          const explanationPromises = Array(settings.N_EXPLANATION_FANOUT)
             .fill(null)
             .map(async () => {
               return await generateChild(node, "explanation", error, false);
@@ -605,9 +603,7 @@ function App() {
       return { node: finalChild, text: currentText };
     }
 
-    const N_ANSWER_FANOUT = 5; // TODO: can be adjusted
-
-    const promises = Array(N_ANSWER_FANOUT)
+    const promises = Array(settings.N_ANSWER_FANOUT)
       .fill(null)
       .map(async () => {
         return await generateChild(submittedNode, "normal", "", true);

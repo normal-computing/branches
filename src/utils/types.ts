@@ -38,7 +38,8 @@ export type Settings = {
   autoZoom: boolean;
   model: string;
   temp: number;
-  n: number;
+  N_ANSWER_FANOUT: number;
+  N_EXPLANATION_FANOUT: number;
 };
 
 export enum ReactFlowNodeTypes {

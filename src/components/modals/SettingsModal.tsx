@@ -26,7 +26,7 @@ export const SettingsModal = memo(function SettingsModal({
   setSettings,
   apiKey,
   setApiKey,
-  availableModels
+  availableModels,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -106,13 +106,28 @@ export const SettingsModal = memo(function SettingsModal({
           />
 
           <LabeledSlider
-            mt={3}
-            label="Number of Responses"
-            value={settings.n}
+            mt={5}
+            label="Answer Fanout"
+            value={settings.N_ANSWER_FANOUT}
             setValue={(v: number) => {
-              setSettings({ ...settings, n: v });
+              setSettings({ ...settings, N_ANSWER_FANOUT: v });
 
-              if (MIXPANEL_TOKEN) mixpanel.track("Changed number of responses");
+              if (MIXPANEL_TOKEN) mixpanel.track("Changed answer fanout");
+            }}
+            color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
+            max={10}
+            min={1}
+            step={1}
+          />
+
+          <LabeledSlider
+            mt={3}
+            label="Explanation Fanout"
+            value={settings.N_EXPLANATION_FANOUT}
+            setValue={(v: number) => {
+              setSettings({ ...settings, N_EXPLANATION_FANOUT: v });
+
+              if (MIXPANEL_TOKEN) mixpanel.track("Changed explanation fanout");
             }}
             color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
             max={10}
