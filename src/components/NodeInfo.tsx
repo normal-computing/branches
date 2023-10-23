@@ -1,6 +1,7 @@
 import { Node, Edge } from "reactflow";
 import HUMAN_EVAL_PROBLEMS from "../utils/human_eval_problems.json";
 import {
+  Box,
   Text,
   Tag,
   TagLeftIcon,
@@ -122,7 +123,7 @@ export function NodeInfo({
       )} */}
 
       <Heading as="h4" size="md">
-        Input
+        Problem
       </Heading>
 
       {selectedNodeParent || selectedNodeId == null ? (
@@ -169,10 +170,9 @@ export function NodeInfo({
       {selectedNode?.data?.input &&
         HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input] &&
         HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] && (
-          <>
-            <Heading as="h4" size="md">
-              Prompt
-            </Heading>
+          <Box marginTop="1rem">
+            {" "}
+            {/* Wrap the Markdown component with a Box and apply marginTop */}
             <Markdown
               text={
                 "```python\n" +
@@ -180,7 +180,7 @@ export function NodeInfo({
                 "\n```"
               }
             />
-          </>
+          </Box>
         )}
 
       {lineage && lineage.length >= 1 && (
