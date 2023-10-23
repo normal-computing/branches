@@ -93,7 +93,7 @@ function App() {
   });
   const { nodes: animatedNodes } = useAnimatedNodes(visibleNodes, { animationDuration });
 
-  const [filteredNodes, setFilteredNodes] = useState([]);
+  const [filteredNodes, setFilteredNodes] = useState<Node[]>([]);
   const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
 
   const [inputTokenCount, setInputTokenCount] = useState(0);
@@ -218,11 +218,27 @@ function App() {
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
+    type FluxNodeInput = {
+      id?: string;
+      x: number;
+      y: number;
+      fluxNodeType: FluxNodeType;
+      input: string;
+      text: string;
+      streamId?: string;
+      steps: string[];
+      style: any;
+    };
+    type FluxEdgeInput = {
+      source: string;
+      target: string;
+      animated: boolean;
+    }
 
     const createNewNodeAndEdge = (
       currentNode: Node,
-      newFluxNode: (node: Partial<Node>) => Node,
-      newFluxEdge: (node: Partial<Edge>) => Edge,
+      newFluxNode: (node: FluxNodeInput) => Node,
+      newFluxEdge: (node: FluxEdgeInput) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges
     ) => {

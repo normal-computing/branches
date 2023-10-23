@@ -12,7 +12,9 @@ import App from "./components/App";
 
 import "./index.css";
 
-export const MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN;
+// change the below line if `MIXPANEL_TOKEN` is needed; 
+// if so, must change `module` in `tsconfig.json`.
+export const MIXPANEL_TOKEN = ""; // import.meta.env.VITE_MIXPANEL_TOKEN;
 
 if (MIXPANEL_TOKEN) mixpanel.init(MIXPANEL_TOKEN);
 
