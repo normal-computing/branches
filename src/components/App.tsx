@@ -281,8 +281,8 @@ function App() {
                 background: getFluxNodeColor(
                   false,
                   false,
-                  node.data.isTerminal,
-                  node.data.score
+                  node.data.isTerminal || false,
+                  node.data.score || 0
                 ),
               },
             };
@@ -552,7 +552,7 @@ function App() {
                     false,
                     true,
                     isTerminal,
-                    finishedNode.data.score
+                    finishedNode.data.score || 0
                   ),
                 },
                 data: {
@@ -631,7 +631,7 @@ function App() {
                 );
                 handlePromises.push(promise);
 
-                if (prevNode!.data.isTerminal) {
+                if (prevNode?.data.isTerminal) {
                   foundTerminal = true;
                   return newChildren;
                 }
@@ -718,7 +718,7 @@ function App() {
 
     while (currentNodes.some((node) => !node.data.isTerminal) && step < N_STEP) {
       const nonTerminalNodes = currentNodes.filter((node) => !node.data.isTerminal);
-      nonTerminalNodes.sort((a, b) => b.data.score - a.data.score);
+      nonTerminalNodes.sort((a, b) => (b.data.score || 0) - (a.data.score || 0));
       const topKNodes = nonTerminalNodes.slice(0, K);
       if (topKNodes.length === 0) break;
 
