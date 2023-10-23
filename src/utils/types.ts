@@ -10,17 +10,18 @@ type FluxNodeData = {
   hasCustomlabel?: boolean;
 };
 
+// note: made some arguments optional here. if things break, could be my fault
 export type ToTNodeData = FluxNodeData & {
   input: string;
-  output: string;
-  score: number;
+  output?: string;
+  score?: number;
   steps: string[];
-  evals: string[];
+  evals?: string[];
   expandable: boolean;
   expanded: boolean;
-  isInAnswerPath: boolean;
-  isTerminal: boolean;
-  isValid: boolean;
+  isInAnswerPath?: boolean;
+  isTerminal?: boolean;
+  isValid?: boolean;
 };
 
 export enum FluxNodeType {

@@ -93,7 +93,7 @@ function App() {
   });
   const { nodes: animatedNodes } = useAnimatedNodes(visibleNodes, { animationDuration });
 
-  const [filteredNodes, setFilteredNodes] = useState([]);
+  const [filteredNodes, setFilteredNodes] = useState<Node[]>([]);
   const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
 
   const [inputTokenCount, setInputTokenCount] = useState(0);
@@ -218,11 +218,27 @@ function App() {
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
+    type FluxNodeInput = {
+      id?: string;
+      x: number;
+      y: number;
+      fluxNodeType: FluxNodeType;
+      input: string;
+      text: string;
+      streamId?: string;
+      steps: string[];
+      style: any;
+    };
+    type FluxEdgeInput = {
+      source: string;
+      target: string;
+      animated: boolean;
+    }
 
     const createNewNodeAndEdge = (
       currentNode: Node,
-      newFluxNode: (node: Partial<Node>) => Node,
-      newFluxEdge: (node: Partial<Edge>) => Edge,
+      newFluxNode: (node: FluxNodeInput) => Node,
+      newFluxEdge: (node: FluxEdgeInput) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges
     ) => {
@@ -265,8 +281,8 @@ function App() {
                 background: getFluxNodeColor(
                   false,
                   false,
-                  node.data.isTerminal,
-                  node.data.score
+                  node.data.isTerminal || false,
+                  node.data.score || 0
                 ),
               },
             };
@@ -536,7 +552,7 @@ function App() {
                     false,
                     true,
                     isTerminal,
-                    finishedNode.data.score
+                    finishedNode.data.score || 0
                   ),
                 },
                 data: {
@@ -615,7 +631,7 @@ function App() {
                 );
                 handlePromises.push(promise);
 
-                if (prevNode!.data.isTerminal) {
+                if (prevNode?.data.isTerminal) {
                   foundTerminal = true;
                   return newChildren;
                 }
@@ -702,7 +718,7 @@ function App() {
 
     while (currentNodes.some((node) => !node.data.isTerminal) && step < N_STEP) {
       const nonTerminalNodes = currentNodes.filter((node) => !node.data.isTerminal);
-      nonTerminalNodes.sort((a, b) => b.data.score - a.data.score);
+      nonTerminalNodes.sort((a, b) => (b.data.score || 0) - (a.data.score || 0));
       const topKNodes = nonTerminalNodes.slice(0, K);
       if (topKNodes.length === 0) break;
 
