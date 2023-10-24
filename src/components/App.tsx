@@ -390,20 +390,32 @@ function App() {
             explanationPromises
           );
 
-          const regenChildrenPromises: Promise<NodeWithText>[] =
+          const regenChildrenPromises: Promise<NodeWithText[]>[] =
             explanationChildrenWithText.map(async (explanationChildWithText) => {
-              // Assuming that `error` is available in the current scope
-              return await generateChild(
-                explanationChildWithText.node,
-                "regen",
-                error,
-                true
-              );
+              // Create N_ANSWER_FANOUT number of promises for each explanation child
+              const regenPromises = Array(settings.N_ANSWER_FANOUT)
+                .fill(null)
+                .map(async () => {
+                  // Assuming that `error` is available in the current scope
+                  return await generateChild(
+                    explanationChildWithText.node,
+                    "regen",
+                    error,
+                    true
+                  );
+                });
+
+              // Await all regenPromises for the current explanation child
+              return await Promise.all(regenPromises);
             });
 
-          const regenChildrenWithText: NodeWithText[] = await Promise.all(
+          // Await all regenChildrenPromises for all explanation children
+          const regenChildrenArrays: NodeWithText[][] = await Promise.all(
             regenChildrenPromises
           );
+
+          // Flatten the array of arrays into a single array
+          const regenChildrenWithText: NodeWithText[] = [].concat(...regenChildrenArrays);
 
           return regenChildrenWithText;
         }
