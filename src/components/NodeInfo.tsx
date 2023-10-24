@@ -21,6 +21,7 @@ import { Prompt } from "./Prompt";
 import { getFluxNodeParent } from "../utils/fluxNode";
 import { useEffect, useState } from "react";
 import { Markdown } from "./utils/Markdown";
+import { Row } from "../utils/chakra";
 
 function EvalListItem({ item }: { item: string }) {
   if (item) {
@@ -76,6 +77,7 @@ export function NodeInfo({
     lineage &&
     (lineage.find((n) => n.selected === true) as Node<ToTNodeData> | undefined);
   const selectedNodeId = selectedNode?.id ?? null;
+  const rootNode = lineage[lineage.length - 1];
 
   const [selectedNodeParent, setSelectedNodeParent] = useState<
     Node<ToTNodeData> | null | undefined
@@ -122,66 +124,88 @@ export function NodeInfo({
         />
       )} */}
 
-      <Heading as="h4" size="md">
-        Problem
-      </Heading>
+      <Row
+        mt={2}
+        mb={2}
+        p={3}
+        mainAxisAlignment="flex-start"
+        crossAxisAlignment="flex-start"
+        borderRadius="6px"
+        borderLeftWidth="0px" // {isLast ? "4px" : "0px"}
+        _hover={{
+          boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
+        }}
+        // borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+        // position="relative"
+        //onMouseEnter={() => setHoveredNodeId(node.id)}
+        ///onMouseLeave={() => setHoveredNodeId(null)}
+        bg={rootNode?.style?.background || "#FFFFFF"}
+        // key={rootNode?.id}
+        onClick={() => {
+          const selection = window.getSelection();
 
-      {selectedNodeParent || selectedNodeId == null ? (
-        <p>{selectedNode?.data.input ?? ""}</p>
-      ) : (
-        <Flex
-          alignItems="center"
-          border="1px solid"
-          borderColor="gray.300"
-          borderRadius="md"
-          overflow="hidden"
-        >
-          <Text
-            backgroundColor="gray.100"
-            padding="0.5rem"
-            borderRight="1px solid"
-            borderColor="gray.300"
-          >
-            HumanEval/
-          </Text>
-          <Input
-            type="number"
-            placeholder="Enter number"
-            defaultValue={selectedNode?.data.input.replace("HumanEval/", "")}
-            onChange={(e) => {
-              const newText = "HumanEval/" + e.target.value;
-              onPromptType(newText);
-            }}
-            border="none"
-            _focus={{ boxShadow: "none" }}
-          />
-        </Flex>
-      )}
-
-      {selectedNode?.data.output && selectedNode?.data.output != "" && (
-        <>
+          if (selection?.isCollapsed) {
+            selectNode(rootNode!.id);
+          }
+        }}
+        cursor="pointer"
+      >
+        <Box w="100%">
           <Heading as="h4" size="md">
-            Output
+            Problem
           </Heading>
-          <p>{selectedNode?.data.output ?? ""}</p>
-        </>
-      )}
 
-      {selectedNode?.data?.input &&
-        HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input] &&
-        HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] && (
-          <Box marginTop="1rem">
-            {" "}
-            {/* Wrap the Markdown component with a Box and apply marginTop */}
-            <Markdown
-              text={
-                "```python\n" +
-                HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] +
-                "\n```"
-              }
-            />
-          </Box>
-        )}
+          {selectedNodeParent || selectedNodeId == null ? (
+            <p>{selectedNode?.data.input ?? ""}</p>
+          ) : (
+            <Flex
+              alignItems="center"
+              border="1px solid"
+              borderColor="gray.300"
+              borderRadius="md"
+              overflow="hidden"
+              w="100%"
+            >
+              <Text
+                backgroundColor="gray.100"
+                padding="0.5rem"
+                borderRight="1px solid"
+                borderColor="gray.300"
+              >
+                HumanEval/
+              </Text>
+              <Input
+                type="number"
+                placeholder="Enter number"
+                defaultValue={selectedNode?.data.input.replace("HumanEval/", "")}
+                onChange={(e) => {
+                  const newText = "HumanEval/" + e.target.value;
+                  onPromptType(newText);
+                }}
+                border="none"
+                _focus={{ boxShadow: "none" }}
+                w="100%"
+                backgroundColor="white"
+              />
+            </Flex>
+          )}
+
+          {selectedNode?.data?.input &&
+            HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input] &&
+            HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] && (
+              <Box marginTop="1rem" w="100%">
+                {" "}
+                <Markdown
+                  text={
+                    "```python\n" +
+                    HUMAN_EVAL_PROBLEMS[selectedNode?.data?.input]["prompt"] +
+                    "\n```"
+                  }
+                />
+              </Box>
+            )}
+        </Box>
+      </Row>
 
       {lineage && lineage.length >= 1 && (
         <Prompt
