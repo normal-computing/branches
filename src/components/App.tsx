@@ -88,7 +88,7 @@ function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const treeWidth: number = 300;
+  const treeWidth: number = 180;
   const treeHeight: number = 150;
   const animationDuration: number = 200;
 
@@ -311,7 +311,7 @@ function App() {
         });
       });
     };
-    
+
     // need to modify to use model name, currenlty defining enc in function is very slow
     const enc = encodingForModel("gpt-3.5-turbo");
     function countTokens(text: string): number {
