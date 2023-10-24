@@ -14,9 +14,13 @@ import { Node, useReactFlow } from "reactflow";
 export function Prompt({
   submitPrompt,
   selectedNode,
+  lineage,
+  selectNode,
 }: {
   submitPrompt: () => Promise<void>;
   selectedNode: (id: string) => void;
+  lineage: Node<ToTNodeData>[] | null;
+  selectNode: (id: string) => void;
 }) {
   const { setNodes } = useReactFlow();
 
@@ -69,80 +73,137 @@ export function Prompt({
           const data = selectedNode.data;
           const errors = data.errors || [];
           const explanations = data.explanations || [];
+          const currNode: Node | undefined = lineage
+            ?.slice(0, lineage.length - 1)
+            .reverse()[i * 2];
+          const currExplanationNode =
+            lineage?.length > 2
+              ? lineage?.slice(0, lineage.length - 1).reverse()[1]
+              : null;
 
           return (
             <>
-              {data.streamId && data.text === "" ? (
-                <Center expand>
-                  <Spinner />
-                </Center>
-              ) : (
-                <>
-                  <Button
-                    display={hoveredNodeId === selectedNode.id ? "block" : "none"}
-                    onClick={() =>
-                      data.streamId ? stopGenerating() : console.log("no stream ID")
+              <Row
+                mb={2}
+                p={3}
+                mainAxisAlignment="flex-start"
+                crossAxisAlignment="flex-start"
+                borderRadius="6px"
+                borderLeftWidth="0px" // {isLast ? "4px" : "0px"}
+                _hover={{
+                  boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
+                }}
+                borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+                position="relative"
+                //onMouseEnter={() => setHoveredNodeId(node.id)}
+                ///onMouseLeave={() => setHoveredNodeId(null)}
+                bg={currNode.style?.background || "#FFFFFF"}
+                key={currNode?.id}
+                onClick={() => {
+                  const selection = window.getSelection();
+
+                  if (selection?.isCollapsed) {
+                    selectNode(currNode!.id);
+                  }
+                }}
+                cursor="pointer"
+              >
+                {data.streamId && data.text === "" ? (
+                  <Center expand>
+                    <Spinner />
+                  </Center>
+                ) : (
+                  <>
+                    <Button
+                      display={hoveredNodeId === selectedNode.id ? "block" : "none"}
+                      onClick={() =>
+                        data.streamId ? stopGenerating() : console.log("no stream ID")
+                      }
+                      position="absolute"
+                      top={1}
+                      right={1}
+                      zIndex={10}
+                      variant="outline"
+                      border="0px"
+                      p={1}
+                      _hover={{ background: "none" }}
+                    >
+                      <NotAllowedIcon boxSize={4} />
+                    </Button>
+                    <Column
+                      width="100%"
+                      marginRight="30px"
+                      whiteSpace="pre-wrap" // Preserve newlines.
+                      mainAxisAlignment="flex-start"
+                      crossAxisAlignment="flex-start"
+                      borderRadius="6px"
+                      wordBreak="break-word"
+                      minHeight={
+                        "75px" // TODO: may be "0px"
+                      }
+                    >
+                      {solution && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <strong>Solution</strong>
+                          <Markdown text={"```python\n" + solution + "\n```"} />
+                        </div>
+                      )}
+                      {errors[i] && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            marginBottom: "20px",
+                            color: "red",
+                          }}
+                        >
+                          <strong>Error</strong>
+                          <Markdown text={"```\n" + errors[i] + "\n```"} />
+                        </div>
+                      )}
+                    </Column>
+                  </>
+                )}
+              </Row>
+              {explanations[i] && (
+                <Row
+                  mb={2}
+                  p={3}
+                  mainAxisAlignment="flex-start"
+                  crossAxisAlignment="flex-start"
+                  borderRadius="6px"
+                  borderLeftWidth="0px" // {isLast ? "4px" : "0px"}
+                  _hover={{
+                    boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
+                  }}
+                  borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+                  position="relative"
+                  bg={currExplanationNode?.style?.background || "#FFFFFF"}
+                  key={currExplanationNode?.id}
+                  onClick={() => {
+                    const selection = window.getSelection();
+
+                    if (selection?.isCollapsed) {
+                      selectNode(currExplanationNode!.id);
                     }
-                    position="absolute"
-                    top={1}
-                    right={1}
-                    zIndex={10}
-                    variant="outline"
-                    border="0px"
-                    p={1}
-                    _hover={{ background: "none" }}
+                  }}
+                  cursor="pointer"
+                >
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      marginBottom: "20px",
+                      color: "green",
+                    }}
                   >
-                    <NotAllowedIcon boxSize={4} />
-                  </Button>
-                  <Column
-                    width="100%"
-                    marginRight="30px"
-                    whiteSpace="pre-wrap" // Preserve newlines.
-                    mainAxisAlignment="flex-start"
-                    crossAxisAlignment="flex-start"
-                    borderRadius="6px"
-                    wordBreak="break-word"
-                    minHeight={
-                      "75px" // TODO: may be "0px"
-                    }
-                  >
-                    {solution && (
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          marginBottom: "20px",
-                        }}
-                      >
-                        <strong>Solution</strong>
-                        <Markdown text={"```python\n" + solution + "\n```"} />
-                      </div>
-                    )}
-                    {errors[i] && (
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          marginBottom: "20px",
-                          color: "red",
-                        }}
-                      >
-                        <strong>Error</strong>
-                        <Markdown text={"```\n" + errors[i] + "\n```"} />
-                      </div>
-                    )}
-                    {explanations[i] && (
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          marginBottom: "20px",
-                          color: "green",
-                        }}
-                      >
-                        <strong>Explanation</strong>
-                        <Markdown text={"```\n" + explanations[i] + "\n```"} />
-                      </div>
-                    )}
-                  </Column>
-                </>
+                    <strong>Explanation</strong>
+                    <Markdown text={"```\n" + explanations[i] + "\n```"} />
+                  </div>
+                </Row>
               )}
             </>
           );

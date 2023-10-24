@@ -184,18 +184,13 @@ export function NodeInfo({
         )}
 
       {lineage && lineage.length >= 1 && (
-        <>
-          {lineage.length > 1 && (
-            <Heading as="h4" size="md">
-              Solutions
-            </Heading>
-          )}
-          <Prompt
-            selectedNode={selectedNode}
-            submitPrompt={submitPrompt}
-            key={selectedNode?.id}
-          />
-        </>
+        <Prompt
+          selectedNode={selectedNode}
+          submitPrompt={submitPrompt}
+          key={selectedNode?.id}
+          lineage={lineage}
+          selectNode={selectNode}
+        />
       )}
     </div>
   );
