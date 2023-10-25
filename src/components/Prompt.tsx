@@ -97,7 +97,7 @@ export function Prompt({
                 position="relative"
                 //onMouseEnter={() => setHoveredNodeId(node.id)}
                 ///onMouseLeave={() => setHoveredNodeId(null)}
-                bg={currNode.style?.background || "#FFFFFF"}
+                bg={currNode?.style?.background || "#FFFFFF"}
                 key={currNode?.id}
                 onClick={() => {
                   const selection = window.getSelection();

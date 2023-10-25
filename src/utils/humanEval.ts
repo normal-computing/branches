@@ -1,5 +1,5 @@
 import HUMAN_EVAL_PROBLEMS from "./human_eval_problems.json";
-
+import { llm } from "./llm"
 // Prompt Templates
 // const q_template = (question: string): string => {
 //     return `
