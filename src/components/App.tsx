@@ -44,7 +44,7 @@ import { OpenAI } from "openai-streams";
 import { Resizable } from "re-resizable";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useBeforeunload } from "react-beforeunload";
-import HUMAN_EVAL_PROBLEMS from "../utils/human_eval_problems.json";
+import rawHumanEvalProblems from "../utils/human_eval_problems.json";
 import useExpandCollapse from "./nodes/useExpandCollapse";
 import useAnimatedNodes from "./nodes/useAnimatedNodes";
 
@@ -68,6 +68,8 @@ import { yieldStream } from "yield-stream";
 import { treeDemo } from "./tree";
 import { getFluxNodeColor } from "../utils/color";
 import { getEncoding, encodingForModel } from "js-tiktoken";
+
+const HUMAN_EVAL_PROBLEMS = rawHumanEvalProblems as HumanEvalProblemsType;
 
 function App() {
   const toast = useToast();
@@ -537,8 +539,8 @@ function App() {
         nodeType == "explanation"
           ? explanationMessage(question, answer, error)
           : nodeType == "regen"
-          ? regenMessage(question, answer, error, explanation)
-          : humanEvalMessageFromNode(node);
+            ? regenMessage(question, answer, error, explanation)
+            : humanEvalMessageFromNode(node);
       const newInputTokens = countTokens(messages[0]["content"]);
       setInputTokenCount((prevCount) => prevCount + newInputTokens);
 
