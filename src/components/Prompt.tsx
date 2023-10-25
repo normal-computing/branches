@@ -77,7 +77,7 @@ export function Prompt({
             ?.slice(0, lineage.length - 1)
             .reverse()[i * 2];
           const currExplanationNode =
-            lineage?.length > 2
+            lineage?.length || 0 > 2
               ? lineage?.slice(0, lineage.length - 1).reverse()[1]
               : null;
 

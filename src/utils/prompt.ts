@@ -1,9 +1,10 @@
-import { ToTNodeData } from "./types";
+import { ToTNodeData, HumanEvalProblemsType } from "./types";
 import { ChatCompletionRequestMessage } from "openai-streams";
 import { MAX_AUTOLABEL_CHARS } from "./constants";
 import { Node } from "reactflow";
 import * as nunjucks from "nunjucks";
-import HUMAN_EVAL_PROBLEMS from "./human_eval_problems.json";
+import rawHumanEvalProblems from "./human_eval_problems.json";
+const HUMAN_EVAL_PROBLEMS = rawHumanEvalProblems as HumanEvalProblemsType;
 
 export function messageFromNode(
   currNode: Node<ToTNodeData>
@@ -202,7 +203,7 @@ export function formatAutoLabel(text: string) {
 
   return formattedText.length > MAX_AUTOLABEL_CHARS
     ? formattedText.slice(0, MAX_AUTOLABEL_CHARS).split(" ").slice(0, -1).join(" ") +
-        " ..."
+    " ..."
     : formattedText;
 }
 

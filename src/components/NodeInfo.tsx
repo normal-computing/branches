@@ -79,7 +79,7 @@ export function NodeInfo({
     lineage &&
     (lineage.find((n) => n.selected === true) as Node<ToTNodeData> | undefined);
   const selectedNodeId = selectedNode?.id ?? null;
-  const rootNode = lineage[lineage.length - 1];
+  const rootNode = lineage ? lineage[lineage.length - 1] : undefined;
 
   const [selectedNodeParent, setSelectedNodeParent] = useState<
     Node<ToTNodeData> | null | undefined
