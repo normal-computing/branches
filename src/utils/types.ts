@@ -26,6 +26,16 @@ export type ToTNodeData = FluxNodeData & {
   steps: string[];
 };
 
+export type HumanEvalProblemsType = {
+  [key: string]: {
+    task_id: string;
+    prompt: string;
+    entry_point: string;
+    canonical_solution: string;
+    test: string;
+  };
+};
+
 export enum FluxNodeType {
   System = "System",
   User = "User",

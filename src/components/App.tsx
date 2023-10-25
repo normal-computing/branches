@@ -32,7 +32,7 @@ import {
 } from "../utils/prompt";
 import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
-import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
+import { ToTNodeData, FluxNodeType, Settings, HumanEvalProblemsType } from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -490,7 +490,7 @@ function App() {
                     false,
                     isTerminal,
                     true,
-                    finishedNode.data.score
+                    finishedNode.data.score || 0
                   ),
                 },
                 data: {

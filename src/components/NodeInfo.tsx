@@ -1,5 +1,5 @@
 import { Node, Edge } from "reactflow";
-import HUMAN_EVAL_PROBLEMS from "../utils/human_eval_problems.json";
+import rawHumanEvalProblems from "../utils/human_eval_problems.json";
 import {
   Box,
   Text,
@@ -16,12 +16,14 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
 import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
-import { Settings, ToTNodeData } from "../utils/types";
+import { Settings, ToTNodeData, HumanEvalProblemsType } from "../utils/types";
 import { Prompt } from "./Prompt";
 import { getFluxNodeParent } from "../utils/fluxNode";
 import { useEffect, useState } from "react";
 import { Markdown } from "./utils/Markdown";
 import { Row } from "../utils/chakra";
+
+const HUMAN_EVAL_PROBLEMS = rawHumanEvalProblems as HumanEvalProblemsType;
 
 function EvalListItem({ item }: { item: string }) {
   if (item) {

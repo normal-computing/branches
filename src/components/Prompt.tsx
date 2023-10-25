@@ -97,7 +97,7 @@ export function Prompt({
                 position="relative"
                 //onMouseEnter={() => setHoveredNodeId(node.id)}
                 ///onMouseLeave={() => setHoveredNodeId(null)}
-                bg={currNode?.style?.background || "#FFFFFF"}
+                bg={currNode?.style?.background as string || "#FFFFFF"}
                 key={currNode?.id}
                 onClick={() => {
                   const selection = window.getSelection();
@@ -182,7 +182,7 @@ export function Prompt({
                   }}
                   borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
                   position="relative"
-                  bg={currExplanationNode?.style?.background || "#FFFFFF"}
+                  bg={currExplanationNode?.style?.background as string || "#FFFFFF"}
                   key={currExplanationNode?.id}
                   onClick={() => {
                     const selection = window.getSelection();
