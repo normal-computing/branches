@@ -139,7 +139,7 @@ export function NodeInfo({
         // position="relative"
         //onMouseEnter={() => setHoveredNodeId(node.id)}
         ///onMouseLeave={() => setHoveredNodeId(null)}
-        bg={rootNode?.style?.background || "#FFFFFF"}
+        bg={rootNode?.style?.background as string || "#FFFFFF"}
         // key={rootNode?.id}
         onClick={() => {
           const selection = window.getSelection();

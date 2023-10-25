@@ -12,16 +12,16 @@ type FluxNodeData = {
 
 export type ToTNodeData = FluxNodeData & {
   errors: string[];
-  evals: string[];
+  evals?: string[];
   expandable: boolean;
   expanded: boolean;
   explanations: string[];
   input: string;
-  isInAnswerPath: boolean;
-  isTerminal: boolean;
-  isValid: boolean;
-  output: string;
-  score: number;
+  isInAnswerPath?: boolean;
+  isTerminal?: boolean;
+  isValid?: boolean;
+  output?: string;
+  score?: number;
   solutions: string[];
   steps: string[];
 };

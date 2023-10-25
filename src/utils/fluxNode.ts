@@ -106,9 +106,9 @@ export function modifyFluxNodeText(
         background: getFluxNodeColor(
           false,
           isRunning,
-          copy.data.isTerminal,
+          copy.data.isTerminal || false,
           true,
-          copy.data.score
+          copy.data.score || 0
         ),
       };
 

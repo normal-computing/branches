@@ -17,12 +17,12 @@ export const REACT_FLOW_NODE_TYPES: Record<
 
 export const DEFAULT_SETTINGS: Settings = {
   temp: 1.2,
-  n: 3,
+  N_ANSWER_FANOUT: 3,
+  N_EXPLANATION_FANOUT: 3,
   autoZoom: true,
   model: "gpt-3.5-turbo",
-  defaultPreamble: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09 Current date: ${
-    new Date().toISOString().split("T")[0]
-  }`,
+  defaultPreamble: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09 Current date: ${new Date().toISOString().split("T")[0]
+    }`,
 };
 
 export const HOTKEY_CONFIG: Options = {

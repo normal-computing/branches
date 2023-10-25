@@ -18,7 +18,7 @@ export function Prompt({
   selectNode,
 }: {
   submitPrompt: () => Promise<void>;
-  selectedNode: (id: string) => void;
+  selectedNode?: Node<ToTNodeData> | null;
   lineage: Node<ToTNodeData>[] | null;
   selectNode: (id: string) => void;
 }) {
