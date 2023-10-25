@@ -185,7 +185,7 @@ export function appendTextToFluxNodeAsGPT(
       copy.data.explanations[copy.data.explanations.length - 1] = text;
     }
 
-    if (copy.data.hasCustomLabel) return copy;
+    if (copy.data.hasCustomlabel) return copy;
 
     if (!copy.data.label.endsWith(" ...") || isFirstToken) {
       copy.data.label = formatAutoLabel(copy.data.text);
