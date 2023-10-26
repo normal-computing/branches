@@ -37,6 +37,7 @@
   "devDependencies": {
     "@types/mixpanel-browser": "^2.38.1",
     "@types/node": "^18.14.2",
+    "@types/nunjucks": "^3.2.5",
     "@types/react": "^18.0.27",
     "@types/react-beforeunload": "^2.1.1",
     "@types/react-dom": "^18.0.10",
