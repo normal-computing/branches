@@ -100,7 +100,7 @@ function App() {
   });
   const { nodes: animatedNodes } = useAnimatedNodes(visibleNodes, { animationDuration });
 
-  const [filteredNodes, setFilteredNodes] = useState([]);
+  const [filteredNodes, setFilteredNodes] = useState<Node[]>([]);
   const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
 
   const [inputTokenCount, setInputTokenCount] = useState(0);
@@ -279,20 +279,21 @@ function App() {
     const updateNodeColor = (
       nodeId: string,
       setNodes: SetNodes,
-      isExplanation: boolean
+      isExplanation?: boolean
     ) => {
       setNodes((prevNodes: Node<ToTNodeData>[]) => {
         const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
+            console.log(node.data.score)
             return {
               ...node,
               style: {
                 background: getFluxNodeColor(
-                  isExplanation,
+                  isExplanation || false,
                   false,
-                  node.data.isTerminal,
+                  node.data.isTerminal || false,
                   !node.data.errors || node.data.errors.length == 0,
-                  node.data.score
+                  node.data.score || 0
                 ),
               },
             };
