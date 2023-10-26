@@ -35,7 +35,7 @@ export function Prompt({
   const stopGenerating = () => {
     // Reset the stream id.
     setNodes((nodes) =>
-      setFluxNodeStreamId(nodes, { id: selectedNode.id, streamId: undefined })
+      setFluxNodeStreamId(nodes, { id: selectedNode?.id ?? '', streamId: undefined })
     );
 
     if (MIXPANEL_TOKEN) mixpanel.track("Stopped generating response");

@@ -435,7 +435,7 @@ function App() {
           );
 
           // Flatten the array of arrays into a single array
-          const regenChildrenWithText: NodeWithText[] = [].concat(...regenChildrenArrays);
+          const regenChildrenWithText: NodeWithText[] = ([] as NodeWithText[]).concat(...regenChildrenArrays);
 
           return regenChildrenWithText;
         }
