@@ -6,13 +6,10 @@ import { NodeProps } from "reactflow";
 
 import { ReactFlowNodeTypes, Settings } from "./types";
 
-import { LabelUpdaterNode } from "../components/nodes/LabelUpdaterNode";
+import CustomNode from "../components/nodes/CustomNode";
 
-export const REACT_FLOW_NODE_TYPES: Record<
-  ReactFlowNodeTypes,
-  (args: NodeProps) => JSX.Element
-> = {
-  LabelUpdater: LabelUpdaterNode,
+export const REACT_FLOW_NODE_TYPES = {
+  custom: CustomNode,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -21,8 +18,9 @@ export const DEFAULT_SETTINGS: Settings = {
   N_EXPLANATION_FANOUT: 3,
   autoZoom: true,
   model: "gpt-3.5-turbo",
-  defaultPreamble: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09 Current date: ${new Date().toISOString().split("T")[0]
-    }`,
+  defaultPreamble: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09 Current date: ${
+    new Date().toISOString().split("T")[0]
+  }`,
 };
 
 export const HOTKEY_CONFIG: Options = {

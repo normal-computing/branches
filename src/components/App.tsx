@@ -32,7 +32,12 @@ import {
 } from "../utils/prompt";
 import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
-import { ToTNodeData, FluxNodeType, Settings, HumanEvalProblemsType } from "../utils/types";
+import {
+  ToTNodeData,
+  FluxNodeType,
+  Settings,
+  HumanEvalProblemsType,
+} from "../utils/types";
 import { NodeInfo } from "./NodeInfo";
 import { APIKeyModal } from "./modals/APIKeyModal";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -90,7 +95,7 @@ function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const treeWidth: number = 180;
+  const treeWidth: number = 220;
   const treeHeight: number = 150;
   const animationDuration: number = 200;
 
@@ -539,8 +544,8 @@ function App() {
         nodeType == "explanation"
           ? explanationMessage(question, answer, error)
           : nodeType == "regen"
-            ? regenMessage(question, answer, error, explanation)
-            : humanEvalMessageFromNode(node);
+          ? regenMessage(question, answer, error, explanation)
+          : humanEvalMessageFromNode(node);
       const newInputTokens = countTokens(messages[0]["content"]);
       setInputTokenCount((prevCount) => prevCount + newInputTokens);
 

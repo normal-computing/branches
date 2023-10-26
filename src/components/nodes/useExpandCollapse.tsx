@@ -55,7 +55,7 @@ function useExpandCollapse(
         // above so the reference is the same. React needs to see a new reference
         // to trigger a re-render of the node.
         data: { ...d.data.data },
-        type: "default",
+        type: "custom",
         position: isHierarchyPointNode(d) ? { x: d.x, y: d.y } : d.data.position,
       })),
       edges: edges.filter(
