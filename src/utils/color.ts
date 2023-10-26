@@ -33,8 +33,7 @@ export function getFluxNodeColor(
     return "#f7d0a1";
   }
 
-  const opacity = Math.min(Math.max(score / 60, 0.2), 1); // constrain opacity between 0.2 and 1
-  return `rgba(217, 243, 214, ${opacity})`; // RGBA for #d9f3d6 with varying opacity
+  return "#c5e2f6";
 }
 
 export function getFluxNodeTypeDarkColor(fluxNodeType: FluxNodeType) {

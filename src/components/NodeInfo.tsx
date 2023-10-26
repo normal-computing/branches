@@ -65,9 +65,9 @@ export function NodeInfo({
   edges,
 }: {
   lineage: Node<ToTNodeData>[] | null;
-  settings: Settings;
-  setSettings: (settings: Settings) => void;
-  isGPT4: boolean;
+  settings?: Settings;
+  setSettings?: (settings: Settings) => void;
+  isGPT4?: boolean;
   submitPrompt: () => Promise<void>;
   selectNode: (id: string) => void;
   apiKey: string | null;

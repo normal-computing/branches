@@ -105,7 +105,7 @@ function App() {
   });
   const { nodes: animatedNodes } = useAnimatedNodes(visibleNodes, { animationDuration });
 
-  const [filteredNodes, setFilteredNodes] = useState([]);
+  const [filteredNodes, setFilteredNodes] = useState<Node[]>([]);
   const [showAnswerPathOnly, setShowAnswerPathOnly] = useState(false);
 
   const [inputTokenCount, setInputTokenCount] = useState(0);
@@ -225,11 +225,30 @@ function App() {
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
+    type FluxNodeInput = {
+      id?: string;
+      x: number;
+      y: number;
+      fluxNodeType: FluxNodeType;
+      input: string;
+      text: string;
+      streamId?: string;
+      steps: string[];
+      solutions: any[];
+      errors: any[];
+      style: any;
+      explanations: any[];
+    };
+    type FluxEdgeInput = {
+      source: string;
+      target: string;
+      animated: boolean;
+    }
 
     const createNewNodeAndEdge = (
       currentNode: Node,
-      newFluxNode: (node: Partial<Node>) => Node,
-      newFluxEdge: (node: Partial<Edge>) => Edge,
+      newFluxNode: (node: FluxNodeInput) => Node,
+      newFluxEdge: (node: FluxEdgeInput) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges,
       streamId: string,
@@ -284,20 +303,21 @@ function App() {
     const updateNodeColor = (
       nodeId: string,
       setNodes: SetNodes,
-      isExplanation: boolean
+      isExplanation?: boolean
     ) => {
       setNodes((prevNodes: Node<ToTNodeData>[]) => {
         const newNodes = prevNodes.map((node) => {
           if (node.id === nodeId) {
+            console.log(node.data.score)
             return {
               ...node,
               style: {
                 background: getFluxNodeColor(
-                  isExplanation,
+                  isExplanation || false,
                   false,
-                  node.data.isTerminal,
+                  node.data.isTerminal || false,
                   !node.data.errors || node.data.errors.length == 0,
-                  node.data.score
+                  node.data.score || 0
                 ),
               },
             };
@@ -420,7 +440,7 @@ function App() {
           );
 
           // Flatten the array of arrays into a single array
-          const regenChildrenWithText: NodeWithText[] = [].concat(...regenChildrenArrays);
+          const regenChildrenWithText: NodeWithText[] = ([] as NodeWithText[]).concat(...regenChildrenArrays);
 
           return regenChildrenWithText;
         }
