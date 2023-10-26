@@ -220,11 +220,30 @@ function App() {
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
+    type FluxNodeInput = {
+      id?: string;
+      x: number;
+      y: number;
+      fluxNodeType: FluxNodeType;
+      input: string;
+      text: string;
+      streamId?: string;
+      steps: string[];
+      solutions: any[];
+      errors: any[];
+      style: any;
+      explanations: any[];
+    };
+    type FluxEdgeInput = {
+      source: string;
+      target: string;
+      animated: boolean;
+    }
 
     const createNewNodeAndEdge = (
       currentNode: Node,
-      newFluxNode: (node: Partial<Node>) => Node,
-      newFluxEdge: (node: Partial<Edge>) => Edge,
+      newFluxNode: (node: FluxNodeInput) => Node,
+      newFluxEdge: (node: FluxEdgeInput) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges,
       streamId: string,
