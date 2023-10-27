@@ -379,12 +379,11 @@ function App() {
       console.log("data", JSON.stringify(data));
 
       // Sending a POST request to the server
-      let url = "http://127.0.0.1:5000/execute"; // Replace with your server's URL
+      let url = "/api/execute"; // Replace with your server's URL
       let response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "true",
         },
         body: JSON.stringify(data),
       });
@@ -564,8 +563,8 @@ function App() {
         nodeType == "explanation"
           ? explanationMessage(question, answer, error)
           : nodeType == "regen"
-          ? regenMessage(question, answer, error, explanation)
-          : humanEvalMessageFromNode(node);
+            ? regenMessage(question, answer, error, explanation)
+            : humanEvalMessageFromNode(node);
       const newInputTokens = countTokens(messages[0]["content"]);
       setInputTokenCount((prevCount) => prevCount + newInputTokens);
 
