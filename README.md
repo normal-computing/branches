@@ -1,7 +1,7 @@
 <div align="center">
   <h1 align="center">BrainBranch</h1>
   <p align="center">
-    A Graph-based LLM power tool for visualizing and interacting with tree-search algorithms like Tree-of-Thoughts.
+    A graph-based LLM power tool (forked from <a href="https://github.com/paradigmxyz/flux">Flux</a>) for visualizing and interacting with tree-search algorithms like Tree-of-Thoughts.
     <br />
     <br />
     <a href="http://code-gen-tree.vercel.app">Try Online</a>
@@ -16,7 +16,7 @@
 
 ## About
 
-BrainBranch, forked from [Flux](https://github.com/paradigmxyz/flux), is a power tool for visualizing tree-search algorithms like Tree-of-Thoughts.
+BrainBranch is a power tool for visualizing tree-search algorithms like Tree-of-Thoughts.
 
 In this example, we visualize code-generation as a tree-search for finding solutions to Python programs in the HumanEval benchmark. Generated code that fails to compile or pass tests, is reflected upon through its error traceback to generate a reasoning chain and self-correct. 
 
@@ -27,12 +27,20 @@ Visit [code-gen-tree.vercel.app](https://code-gen-tree.vercel.app) to try our ho
 
 ## Running Locally
 
+
+Frontend for the UI:
 ```sh
 git clone https://github.com/normal-computing/BrainBranch.git
 npm install
 npm run dev
 ```
 
+Backend for the code-interpretor:
+```sh
+cd api
+pip install -r requirements.txt
+python execute.py
+```
 ## Contributing
 
 We are happy to receive contributions and feedback to BrainBranch! Please create an issue [here](https://github.com/normal-computing/BrainBranch/issues).
