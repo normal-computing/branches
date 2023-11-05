@@ -1,33 +1,33 @@
 <div align="center">
 
-<img src="./docs/source/_static/logo.png" alt="Branch Logo" width=200></img>
+<img src="./docs/source/_static/logo.png" alt="Branches Logo" width=200></img>
 
-# Branch
+# Branches
 
 Prototype advanced LLM algorithms for reasoning and planning.
 
 [Try Online](http://code-gen-tree.vercel.app) •
-[Report a Bug](https://github.com/normal-computing/Branch/issues) •
+[Report a Bug](https://github.com/normal-computing/Branches/issues) •
 [Stay tuned](#stay-tuned-for)
 
 </div>
 
-![Branch in action: Tree-search visualization for code generation with self-correction in the HumanEval benchmark](https://storage.googleapis.com/normal-blog-artifacts/systerm2/tot_demo.gif)
+![Branches in action: Tree-search visualization for code generation with self-correction in the HumanEval benchmark](https://storage.googleapis.com/normal-blog-artifacts/systerm2/tot_demo.gif)
 
-*Branch's tree-search visualization during code generation. The system automatically corrects itself using feedback by analyzing error tracebacks to refine its solutions. In this case, we target Python programming problems from the HumanEval dataset.*
+***Branches tree-search visualization during code generation.** We visualize a reasoning algorihm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
 
 ## About
 
-Branch is an AI tool for graph-based visualization and interaction with algorithms for advanced LLM reasoning and planning like Tree of Thoughts. Branch is adapted from [Flux](https://github.com/paradigmxyz/flux).
+Branches is an AI tool for graph-based prototyping of advanced algorithms for LLM reasoning and planning. Like Tree of Thoughts with Reflexion. Branches is adapted from [Flux](https://github.com/paradigmxyz/flux).
 
 Designed for researchers and developers, it allows users to directly interact with AI reasoning processes, streamlining the exploration of complex coding challenges and strategic problem-solving.
 
 ### Code Generation (HumanEval)
 
-Branch automatically expands decision trees to solve programming problems from the [HumanEval dataset](https://huggingface.co/datasets/openai_humaneval), visualizing reasoning chains and facilitating self-correction through error tracebacks. This is found on the `main` branch and is currently hosted. 
+Branches automatically expands decision trees to solve programming problems from the [HumanEval dataset](https://huggingface.co/datasets/openai_humaneval), visualizing reasoning chains and facilitating self-correction through error tracebacks. This is found on the `main` Branches and is currently hosted. 
 
 ### Game of 24
-Branch includes a specialized evaluation mechanism for the [Game of 24 puzzle](https://en.wikipedia.org/wiki/24_(puzzle)), leveraging a scoring system to enhance breadth-first search (BFS) by prioritizing promising paths. This is found on the `game-of-24` branch.
+Branches includes a specialized evaluation mechanism for the [Game of 24 puzzle](https://en.wikipedia.org/wiki/24_(puzzle)), leveraging a scoring system to enhance breadth-first search (BFS) by prioritizing promising paths. This is found on the `game-of-24` Branches.
 
 ## Features
 
@@ -39,14 +39,14 @@ Branch includes a specialized evaluation mechanism for the [Game of 24 puzzle](h
 
 ## Usage
 
-To get started with Branch, you can either visit [code-gen-tree.vercel.app](https://code-gen-tree.vercel.app) for the hosted version or run it locally by following the instructions below.
+To get started with Branches, you can either visit [code-gen-tree.vercel.app](https://code-gen-tree.vercel.app) for the hosted version or run it locally by following the instructions below.
 
 ## Running Locally
 
 **Frontend (User Interface):**
 
 ```sh
-git clone https://github.com/normal-computing/Branch.git
+git clone https://github.com/normal-computing/Branches.git
 npm install
 npm run dev
 ```
@@ -61,20 +61,20 @@ python execute.py
 
 ## Stay Tuned For
 
-Our commitment to enhancing Branch continues, with exciting new developments on the way:
+Our commitment to enhancing Branches continues, with exciting new developments on the way:
 
-- Node Value Editing and Regenerate Subtree Functionality ([#5](https://github.com/normal-computing/Branch/issues/5))
+- Node Value Editing and Regenerate Subtree Functionality ([#5](https://github.com/normal-computing/Branches/issues/5))
 
-- UI Color Fixes and Customization Features ([#6](https://github.com/normal-computing/Branch/issues/6))
+- UI Color Fixes and Customization Features ([#6](https://github.com/normal-computing/Branches/issues/6))
 
-- Address Model/UI Timeout Issues ([#7](https://github.com/normal-computing/Branch/issues/7))
+- Address Model/UI Timeout Issues ([#7](https://github.com/normal-computing/Branches/issues/7))
 
-- Enhance Game of 24 Logic, Model Cost Tracking, and Prompt Engineering ([#8](https://github.com/normal-computing/Branch/issues/8))
+- Enhance Game of 24 Logic, Model Cost Tracking, and Prompt Engineering ([#8](https://github.com/normal-computing/Branches/issues/8))
 
 ## Contributing
 
-Your contributions make Branch better. Whether it’s bug reports, new features, or feedback, we welcome it all! Report bugs or request features by creating an issue [here](https://github.com/normal-computing/Branch/issues).
+Your contributions make Branches better. Whether it’s bug reports, new features, or feedback, we welcome it all! Report bugs or request features by creating an issue [here](https://github.com/normal-computing/Branches/issues).
 
 ## License
 
-Branch is open-source and continues to uphold the [MIT license](LICENSE).
+Branches is open-source and continues to uphold the [MIT license](LICENSE).
