@@ -1,0 +1,2 @@
+openai
+git+https://github.com/arunpatro/human-eval.git@pipgit

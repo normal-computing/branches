@@ -1,11 +1,12 @@
 import { MIXPANEL_TOKEN } from "../../main";
 import { Row } from "../../utils/chakra";
 import { modifyFluxNodeLabel, modifyReactFlowNodeProperties } from "../../utils/fluxNode";
-import { FluxNodeData } from "../../utils/types";
+import { ToTNodeData } from "../../utils/types";
 import { Box, Input, Tooltip } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
 import { useEffect, useState } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
+import { FaChevronDown, FaChevronRight } from "react-icons/fa"; // Import the icons
 
 export function LabelUpdaterNode({
   id,
@@ -13,7 +14,7 @@ export function LabelUpdaterNode({
   isConnectable,
 }: {
   id: string;
-  data: FluxNodeData;
+  data: ToTNodeData;
   isConnectable: boolean;
 }) {
   const { setNodes } = useReactFlow();
@@ -62,6 +63,7 @@ export function LabelUpdaterNode({
         <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
 
         <Row mainAxisAlignment="center" crossAxisAlignment="center" height="100%" px={2}>
+          {data.expanded ? <FaChevronDown /> : <FaChevronRight />}{" "}
           <Input
             onBlur={cancel}
             id={inputId}
@@ -75,24 +77,6 @@ export function LabelUpdaterNode({
             size="xs"
             // px={6}
           />
-
-          {/* <Row
-          mainAxisAlignment="center"
-          crossAxisAlignment="center"
-          position="absolute"
-          top={0}
-          right="14px"
-          height="100%"
-          zIndex={1}
-        >
-          <CloseIcon
-            rounded="sm"
-            p={1}
-            cursor="pointer"
-            _hover={{ backgroundColor: "none" }}
-            onClick={cancel}
-          />
-        </Row> */}
         </Row>
 
         <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />

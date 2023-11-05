@@ -65,7 +65,7 @@ const CopyCodeButton = ({ codeRef }: { codeRef: RefObject<ReactNode[]> }) => {
       px="5px"
       _hover={{ background: "#EEEEEE" }}
     >
-      <CopyIcon boxSize={4} mr={1} /> {copied ? "Copied!" : "Copy Code"}
+      <CopyIcon boxSize={4} mr={1} /> {copied ? "Copied!" : "Copy"}
     </Button>
   );
 };

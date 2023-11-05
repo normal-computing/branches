@@ -1,47 +1,78 @@
 <div align="center">
-  <h1 align="center">Flux</h1>
-  <p align="center">
-    Graph-based LLM power tool for exploring many completions in parallel.
-    <br />
-    <br />
-    <a href="https://twitter.com/transmissions11/status/1640775967856803840">Announcement</a>
-    ·
-    <a href="http://flux.paradigm.xyz">Try Online</a>
-    ·
-    <a href="https://github.com/paradigmxyz/flux/issues">Report a Bug</a>
-  </p>
+
+<img src="./docs/source/_static/logo.png" alt="Branches Logo" width=200></img>
+
+# Branches
+
+Prototype advanced LLM algorithms for reasoning and planning.
+
+[Try Online](http://code-gen-tree.vercel.app) •
+[Report a Bug](https://github.com/normal-computing/branches/issues) •
+[Stay tuned](#stay-tuned-for)
+
 </div>
 
-<br />
+![Branches in action: Tree-search visualization for code generation with self-correction in the HumanEval benchmark](https://storage.googleapis.com/normal-blog-artifacts/systerm2/tot_demo.gif)
 
-![A screenshot of a Flux workspace.](/public/meta-full.png)
+***Tree-search visualization during code generation.** We visualize a reasoning algorithm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
 
 ## About
 
-Flux is a power tool for interacting with large language models (LLMs) that **generates multiple completions per prompt in a tree structure and lets you explore the best ones in parallel.** 
+Branches is an AI tool for graph-based prototyping of advanced algorithms for LLM reasoning and planning -- like Tree of Thoughts and Reflexion. Branches is adapted from [Flux](https://github.com/paradigmxyz/flux).
 
-Flux's tree structure allows you to:
+Designed for researchers and developers, it allows users to directly interact with AI reasoning processes, streamlining the exploration of complex coding challenges and strategic problem-solving.
 
-- Get a wider variety of creative responses
+### Code Generation (HumanEval)
 
-- Test out different prompts with the same shared context
+Branches automatically expands decision trees to solve programming problems from the [HumanEval dataset](https://huggingface.co/datasets/openai_humaneval), visualizing reasoning chains and facilitating self-correction through error tracebacks. This is found on the `main` branch and is currently hosted. 
 
-- Use inconsistencies to identify where the model is uncertain 
+### Game of 24
+Branches includes a specialized evaluation mechanism for the [Game of 24 puzzle](https://en.wikipedia.org/wiki/24_(puzzle)), leveraging a scoring system to enhance breadth-first search (BFS) by prioritizing promising paths. This is found on the `game-of-24` branch.
 
-It also provides a robust set of keyboard shortcuts, allows setting the system message and editing GPT messages, autosaves to local storage, uses the OpenAI API directly, and is 100% open source and MIT licensed.
+## Features
+
+- [x] 🌳 **Automated Tree Expansion**: Leveraging Tree of Thoughts for dynamic expansion in problem-solving.
+- [x] 🧠 **Pre-loaded Prompts**: Curated for search-based reasoning to solve specific problems.
+- [x] 💻 **Code Interpretation**: Instant execution and error analysis for self-correcting AI-generated code.
+- [x] 🔍 **Scoring Mechanism**: Advanced BFS for the Game of 24 with node evaluation for search optimization.
+- [x] 📊 **Interactive Visualization**: Graphical representation of tree searches for easy analysis and education. Largely adapted from [Flux](https://github.com/paradigmxyz/flux).
 
 ## Usage
 
-Visit [flux.paradigm.xyz](https://flux.paradigm.xyz) to try Flux online or follow the instructions below to run it locally.
+To get started with Branches, you can either visit [code-gen-tree.vercel.app](https://code-gen-tree.vercel.app) for the hosted version or run it locally by following the instructions below.
 
 ## Running Locally
 
+**Frontend (User Interface):**
+
 ```sh
-git clone https://github.com/paradigmxyz/flux.git
+git clone https://github.com/normal-computing/branches.git
 npm install
 npm run dev
 ```
 
+**Backend (Code Interpreter):**
+
+```sh
+cd api
+pip install -r requirements.txt
+python execute.py
+```
+
+## Stay Tuned For
+
+Our commitment to enhancing Branches continues, with exciting new developments on the way:
+
+- More reasoning and planning algorithms beyond the defaults ([#10](https://github.com/normal-computing/branches/issues/10))
+- Node Value Editing and Regenerate Subtree Functionality ([#5](https://github.com/normal-computing/branches/issues/5))
+- UI Color Fixes and Customization Features ([#6](https://github.com/normal-computing/branches/issues/6))
+- Address Model/UI Timeout Issues ([#7](https://github.com/normal-computing/branches/issues/7))
+- Enhance Game of 24 Logic, Model Cost Tracking, and Prompt Engineering ([#8](https://github.com/normal-computing/branches/issues/8))
+
 ## Contributing
 
-See the [open issues](https://github.com/paradigmxyz/flux/issues) for a list of proposed features (and known issues).
+Your contributions make Branches better. Whether it’s bug reports, new features, or feedback, we welcome it all! Report bugs or request features by creating an issue [here](https://github.com/normal-computing/Branches/issues).
+
+## License
+
+Branches is open-source and continues to uphold the [MIT license](LICENSE).
