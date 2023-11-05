@@ -63,12 +63,10 @@ python execute.py
 
 Our commitment to enhancing Branches continues, with exciting new developments on the way:
 
+- More reasoning and planning algorithms beyond the defaults [#10](https://github.com/normal-computing/branches/issues/10)
 - Node Value Editing and Regenerate Subtree Functionality ([#5](https://github.com/normal-computing/Branches/issues/5))
-
 - UI Color Fixes and Customization Features ([#6](https://github.com/normal-computing/Branches/issues/6))
-
 - Address Model/UI Timeout Issues ([#7](https://github.com/normal-computing/Branches/issues/7))
-
 - Enhance Game of 24 Logic, Model Cost Tracking, and Prompt Engineering ([#8](https://github.com/normal-computing/Branches/issues/8))
 
 ## Contributing
