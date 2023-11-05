@@ -14,11 +14,11 @@ Prototype advanced LLM algorithms for reasoning and planning.
 
 ![Branches in action: Tree-search visualization for code generation with self-correction in the HumanEval benchmark](https://storage.googleapis.com/normal-blog-artifacts/systerm2/tot_demo.gif)
 
-***Branches tree-search visualization during code generation.** We visualize a reasoning algorihm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
+***Tree-search visualization during code generation.** We visualize a reasoning algorithm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
 
 ## About
 
-Branches is an AI tool for graph-based prototyping of advanced algorithms for LLM reasoning and planning. Like Tree of Thoughts with Reflexion. Branches is adapted from [Flux](https://github.com/paradigmxyz/flux).
+Branches is an AI tool for graph-based prototyping of advanced algorithms for LLM reasoning and planning -- like Tree of Thoughts and Reflexion. Branches is adapted from [Flux](https://github.com/paradigmxyz/flux).
 
 Designed for researchers and developers, it allows users to directly interact with AI reasoning processes, streamlining the exploration of complex coding challenges and strategic problem-solving.
 
