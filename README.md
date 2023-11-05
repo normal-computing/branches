@@ -14,7 +14,7 @@ Prototype advanced LLM algorithms for reasoning and planning.
 
 ![Branches in action: Tree-search visualization for code generation with self-correction in the HumanEval benchmark](https://storage.googleapis.com/normal-blog-artifacts/systerm2/tot_demo.gif)
 
-***Branches tree-search visualization during code generation.** We visualize a reasoning algorithm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
+***Tree-search visualization during code generation.** We visualize a reasoning algorithm which learns from feedback, automatically correcting itself by analyzing error tracebacks to refine its solutions. In this case, we benchmark Python programming problems from the HumanEval dataset.*
 
 ## About
 
