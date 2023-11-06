@@ -47,7 +47,7 @@ export function newBranchesNode({
       expanded: true,
       expandable: true,
       label: text,
-      BranchesNodeType,
+      branchesNodeType,
       errors,
       input,
       steps,
