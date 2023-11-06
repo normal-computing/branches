@@ -34,6 +34,7 @@ async def execute():
         return response
 
 
+# check if a 500 error code is thrown
 @app.errorhandler(500)
 def internal_error(error):
     return "500 error: {}".format(str(error)), 500
