@@ -1,5 +1,5 @@
 import { Node } from "reactflow";
-import { ToTNodeData, FluxNodeType } from "../utils/types";
+import { ToTNodeData, BranchesNodeType } from "../utils/types";
 
 export const treeDemoNodes: Node[] = [
   {
@@ -29,8 +29,8 @@ export const treeDemoEdges = [];
 
 function processNode(node: Node): Node<ToTNodeData> {
   const data = { ...node.data } as ToTNodeData;
-  if (data.fluxNodeType == null) {
-    data.fluxNodeType = FluxNodeType.GPT;
+  if (data.branchesNodeType == null) {
+    data.branchesNodeType = BranchesNodeType.GPT;
   }
   // if (data.text == null) {
   //   data.text = '';

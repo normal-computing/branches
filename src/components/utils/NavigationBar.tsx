@@ -19,7 +19,7 @@ export function NavigationBar({
       width="auto"
     >
       <Text whiteSpace="nowrap">
-        <b>Flux</b> <small>Tree of Thoughts</small>
+        <b>Branches</b>
       </Text>
 
       <Box mx="20px" height="100%" width="1px" bg="#EEEEEE" />

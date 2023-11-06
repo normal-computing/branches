@@ -1,8 +1,8 @@
 import { Node, Edge } from "reactflow";
 
 import { STALE_STREAM_ERROR_MESSAGE, STREAM_CANCELED_ERROR_MESSAGE } from "./constants";
-import { FluxNodeType, ToTNodeData, ReactFlowNodeTypes } from "./types";
-import { getFluxNodeColor } from "./color";
+import { BranchesNodeType, ToTNodeData, ReactFlowNodeTypes } from "./types";
+import { getBranchesNodeColor } from "./color";
 import { generateNodeId } from "./nodeId";
 import { formatAutoLabel, getCurrentNumbers } from "./prompt";
 
@@ -10,11 +10,11 @@ import { formatAutoLabel, getCurrentNumbers } from "./prompt";
                          CONSTRUCTORS
 //////////////////////////////////////////////////////////////*/
 
-export function newFluxNode({
+export function newBranchesNode({
   id,
   x,
   y,
-  fluxNodeType,
+  BranchesNodeType,
   input,
   text,
   streamId,
@@ -27,7 +27,7 @@ export function newFluxNode({
   id?: string;
   x: number;
   y: number;
-  fluxNodeType: FluxNodeType;
+  BranchesNodeType: BranchesNodeType;
   input: string;
   text: string;
   streamId?: string;
@@ -47,7 +47,7 @@ export function newFluxNode({
       expanded: true,
       expandable: true,
       label: text,
-      fluxNodeType,
+      BranchesNodeType,
       errors,
       input,
       steps,
@@ -80,7 +80,7 @@ export function modifyReactFlowNodeProperties(
   });
 }
 
-export function modifyFluxNodeText(
+export function modifyBranchesNodeText(
   existingNodes: Node<ToTNodeData>[],
   {
     asHuman,
@@ -98,12 +98,12 @@ export function modifyFluxNodeText(
     copy.data.input = text;
     copy.data.label = text;
 
-    // If the node's fluxNodeType is GPT and we're changing
+    // If the node's branchesNodeType is GPT and we're changing
     // it as a human then its type becomes GPT + Human.
-    if (asHuman && copy.data.fluxNodeType === FluxNodeType.GPT) {
+    if (asHuman && copy.data.branchesNodeType === BranchesNodeType.GPT) {
       copy.style = {
         ...copy.style,
-        background: getFluxNodeColor(
+        background: getBranchesNodeColor(
           false,
           isRunning,
           copy.data.isTerminal || false,
@@ -112,23 +112,23 @@ export function modifyFluxNodeText(
         ),
       };
 
-      copy.data.fluxNodeType = FluxNodeType.TweakedGPT;
+      copy.data.branchesNodeType = BranchesNodeType.TweakedGPT;
     }
 
     // Generate auto label based on prompt text, and preserve custom label
     if (!copy.data.hasCustomlabel) {
       copy.data.label = copy.data.text
         ? formatAutoLabel(copy.data.text)
-        : displayNameFromFluxNodeType(copy.data.fluxNodeType);
+        : displayNameFromBranchesNodeType(copy.data.branchesNodeType);
     }
 
     return copy;
   });
 }
 
-export function modifyFluxNodeLabel(
+export function modifyBranchesNodeLabel(
   existingNodes: Node<ToTNodeData>[],
-  { id, type, label }: { id: string; type?: FluxNodeType; label: string }
+  { id, type, label }: { id: string; type?: BranchesNodeType; label: string }
 ): Node<ToTNodeData>[] {
   return existingNodes.map((node) => {
     if (node.id !== id) return node;
@@ -144,7 +144,7 @@ export function modifyFluxNodeLabel(
   });
 }
 
-export function setFluxNodeStreamId(
+export function setBranchesNodeStreamId(
   existingNodes: Node<ToTNodeData>[],
   { id, streamId }: { id: string; streamId: string | undefined }
 ) {
@@ -160,7 +160,7 @@ export function checkIfTerminal(text: string): boolean {
   return currentNumbers === "24";
 }
 
-export function appendTextToFluxNodeAsGPT(
+export function appendTextToBranchesNodeAsGPT(
   existingNodes: Node<ToTNodeData>[],
   { id, text, streamId }: { id: string; text: string; streamId: string },
   isSolutionNode: boolean // Add this argument
@@ -208,37 +208,37 @@ export function markOnlyNodeAsSelected(
                             GETTERS
 //////////////////////////////////////////////////////////////*/
 
-export function getFluxNode(
+export function getBranchesNode(
   nodes: Node<ToTNodeData>[],
   id: string
 ): Node<ToTNodeData> | undefined {
   return nodes.find((node) => node.id === id);
 }
 
-export function getFluxNodeChildren(
+export function getBranchesNodeChildren(
   existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
 ) {
   return existingNodes.filter(
-    (node) => getFluxNodeParent(existingNodes, existingEdges, node.id)?.id === id
+    (node) => getBranchesNodeParent(existingNodes, existingEdges, node.id)?.id === id
   );
 }
 
-export function getFluxNodeSiblings(
+export function getBranchesNodeSiblings(
   existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   parentId: string,
   nodeId: string
 ): Node<ToTNodeData>[] {
   // Fetch all children of the parent node
-  const siblings = getFluxNodeChildren(existingNodes, existingEdges, parentId);
+  const siblings = getBranchesNodeChildren(existingNodes, existingEdges, parentId);
 
   // Filter out the node itself to get its siblings
   return siblings.filter((node) => node.id !== nodeId);
 }
 
-export function getFluxNodeParent(
+export function getBranchesNodeParent(
   existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
@@ -267,30 +267,30 @@ export function getFluxNodeParent(
 // index 2 is the node's grandparent, etc.
 // TODO: Eventually would be nice to have
 // support for connecting multiple parents!
-export function getFluxNodeLineage(
+export function getBranchesNodeLineage(
   existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   id: string
 ): Node<ToTNodeData>[] {
   const lineage: Node<ToTNodeData>[] = [];
 
-  let currentNode = getFluxNode(existingNodes, id);
+  let currentNode = getBranchesNode(existingNodes, id);
 
   while (currentNode) {
     lineage.push(currentNode);
 
-    currentNode = getFluxNodeParent(existingNodes, existingEdges, currentNode.id);
+    currentNode = getBranchesNodeParent(existingNodes, existingEdges, currentNode.id);
   }
 
   return lineage;
 }
 
-export function isFluxNodeInLineage(
+export function isBranchesNodeInLineage(
   existingNodes: Node<ToTNodeData>[],
   existingEdges: Edge[],
   { nodeToCheck, nodeToGetLineageOf }: { nodeToCheck: string; nodeToGetLineageOf: string }
 ): boolean {
-  const lineage = getFluxNodeLineage(existingNodes, existingEdges, nodeToGetLineageOf);
+  const lineage = getBranchesNodeLineage(existingNodes, existingEdges, nodeToGetLineageOf);
 
   return lineage.some((node) => node.id === nodeToCheck);
 }
@@ -303,11 +303,11 @@ export function getConnectionAllowed(
   return (
     // Check the lineage of the source node to make
     // sure we aren't creating a recursive connection.
-    !isFluxNodeInLineage(existingNodes, existingEdges, {
+    !isBranchesNodeInLineage(existingNodes, existingEdges, {
       nodeToCheck: target,
       nodeToGetLineageOf: source,
       // Check if the target node already has a parent.
-    }) && getFluxNodeParent(existingNodes, existingEdges, target) === undefined
+    }) && getBranchesNodeParent(existingNodes, existingEdges, target) === undefined
   );
 }
 
@@ -315,18 +315,18 @@ export function getConnectionAllowed(
                             RENDERERS
 //////////////////////////////////////////////////////////////*/
 
-export function displayNameFromFluxNodeType(
-  fluxNodeType: FluxNodeType,
+export function displayNameFromBranchesNodeType(
+  branchesNodeType: BranchesNodeType,
   isGPT4?: boolean
 ): string {
-  switch (fluxNodeType) {
-    case FluxNodeType.User:
+  switch (branchesNodeType) {
+    case BranchesNodeType.User:
       return "User";
-    case FluxNodeType.GPT:
+    case BranchesNodeType.GPT:
       return isGPT4 === undefined ? "GPT" : isGPT4 ? "GPT-4" : "GPT-3.5";
-    case FluxNodeType.TweakedGPT:
-      return displayNameFromFluxNodeType(FluxNodeType.GPT, isGPT4) + " (edited)";
-    case FluxNodeType.System:
+    case BranchesNodeType.TweakedGPT:
+      return displayNameFromBranchesNodeType(BranchesNodeType.GPT, isGPT4) + " (edited)";
+    case BranchesNodeType.System:
       return "System";
   }
 }

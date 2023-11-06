@@ -2,15 +2,15 @@ import { Node, Edge } from "reactflow";
 
 import { ChatCompletionResponseMessage } from "openai-streams";
 
-type FluxNodeData = {
+type BranchesNodeData = {
   label: string;
-  fluxNodeType: FluxNodeType;
+  branchesNodeType: BranchesNodeType;
   text: string;
   streamId?: string;
   hasCustomlabel?: boolean;
 };
 
-export type ToTNodeData = FluxNodeData & {
+export type ToTNodeData = BranchesNodeData & {
   errors: string[];
   evals?: string[];
   expandable: boolean;
@@ -36,7 +36,7 @@ export type HumanEvalProblemsType = {
   };
 };
 
-export enum FluxNodeType {
+export enum BranchesNodeType {
   System = "System",
   User = "User",
   GPT = "GPT",

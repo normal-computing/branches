@@ -1,8 +1,8 @@
 import { MIXPANEL_TOKEN } from "../main";
 import { Row, Center, Column } from "../utils/chakra";
-import { getFluxNodeColor, getFluxNodeTypeDarkColor } from "../utils/color";
-import { setFluxNodeStreamId } from "../utils/fluxNode";
-import { ToTNodeData, FluxNodeType, Settings } from "../utils/types";
+import { getBranchesNodeColor, getBranchesNodeTypeDarkColor } from "../utils/color";
+import { setBranchesNodeStreamId } from "../utils/branchesNode";
+import { ToTNodeData, BranchesNodeType, Settings } from "../utils/types";
 import { BigButton } from "./utils/BigButton";
 import { Markdown } from "./utils/Markdown";
 import { NotAllowedIcon } from "@chakra-ui/icons";
@@ -26,7 +26,7 @@ export function Prompt({
 
   // const promptNode = lineage[0];
 
-  // const promptNodeType = selectedNode.data.fluxNodeType;
+  // const promptNodeType = selectedNode.data.branchesNodeType;
 
   const onMainButtonClick = () => {
     submitPrompt();
@@ -35,7 +35,7 @@ export function Prompt({
   const stopGenerating = () => {
     // Reset the stream id.
     setNodes((nodes) =>
-      setFluxNodeStreamId(nodes, { id: selectedNode?.id ?? '', streamId: undefined })
+      setBranchesNodeStreamId(nodes, { id: selectedNode?.id ?? '', streamId: undefined })
     );
 
     if (MIXPANEL_TOKEN) mixpanel.track("Stopped generating response");
@@ -93,7 +93,7 @@ export function Prompt({
                 _hover={{
                   boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
                 }}
-                borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+                borderColor={getBranchesNodeTypeDarkColor(data.branchesNodeType)}
                 position="relative"
                 //onMouseEnter={() => setHoveredNodeId(node.id)}
                 ///onMouseLeave={() => setHoveredNodeId(null)}
@@ -180,7 +180,7 @@ export function Prompt({
                   _hover={{
                     boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
                   }}
-                  borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+                  borderColor={getBranchesNodeTypeDarkColor(data.branchesNodeType)}
                   position="relative"
                   bg={currExplanationNode?.style?.background as string || "#FFFFFF"}
                   key={currExplanationNode?.id}
@@ -220,7 +220,7 @@ export function Prompt({
           <BigButton
             tooltip=""
             onClick={onMainButtonClick}
-            color={getFluxNodeTypeDarkColor(FluxNodeType.User)}
+            color={getBranchesNodeTypeDarkColor(BranchesNodeType.User)}
             width="100%"
             height="100%"
             fontSize="lg"
