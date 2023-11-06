@@ -14,7 +14,7 @@ export function newBranchesNode({
   id,
   x,
   y,
-  BranchesNodeType,
+  branchesNodeType,
   input,
   text,
   streamId,
@@ -27,7 +27,7 @@ export function newBranchesNode({
   id?: string;
   x: number;
   y: number;
-  BranchesNodeType: BranchesNodeType;
+  branchesNodeType: BranchesNodeType;
   input: string;
   text: string;
   streamId?: string;
