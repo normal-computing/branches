@@ -41,22 +41,31 @@ Branches includes a specialized evaluation mechanism for the [Game of 24 puzzle]
 
 To get started with Branches, you can either visit [code-gen-tree.vercel.app](https://code-gen-tree.vercel.app) for the hosted version or run it locally by following the instructions below.
 
+## Deploy to Vercel
+```sh
+npm i -g vercel
+vercel
+```
+
 ## Running Locally
+For local development, checkout the `local-dev` branch. This is slightly modified to use Flask to serve the code interpreter API.
 
-**Frontend (User Interface):**
-
+Setup repo
 ```sh
 git clone https://github.com/normal-computing/branches.git
+git checkout local-dev
+```
+
+**Frontend (User Interface):**
+```sh
 npm install
 npm run dev
 ```
 
 **Backend (Code Interpreter):**
-
-```sh
-cd api
-pip install -r requirements.txt
-python execute.py
+```
+pip install -r backend/requirements.txt
+python backend/interpreter.py
 ```
 
 ## Stay Tuned For
