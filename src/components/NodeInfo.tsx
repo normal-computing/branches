@@ -18,7 +18,7 @@ import { CheckIcon } from "@chakra-ui/icons";
 import { MdCheck, MdQuestionMark, MdClose, MdThumbUpOffAlt } from "react-icons/md";
 import { Settings, ToTNodeData, HumanEvalProblemsType } from "../utils/types";
 import { Prompt } from "./Prompt";
-import { getFluxNodeParent } from "../utils/fluxNode";
+import { getBranchesNodeParent } from "../utils/branchesNode";
 import { useEffect, useState } from "react";
 import { Markdown } from "./utils/Markdown";
 import { Row } from "../utils/chakra";
@@ -87,7 +87,7 @@ export function NodeInfo({
 
   useEffect(() => {
     const newSelectedNodeParent =
-      selectedNodeId !== null ? getFluxNodeParent(nodes, edges, selectedNodeId) : null;
+      selectedNodeId !== null ? getBranchesNodeParent(nodes, edges, selectedNodeId) : null;
     setSelectedNodeParent(newSelectedNodeParent);
   }, [selectedNodeId, nodes, edges]);
 
@@ -137,7 +137,7 @@ export function NodeInfo({
         _hover={{
           boxShadow: "0 0 0 0.5px #1a192b", // isLast ? "none" : "0 0 0 0.5px #1a192b",
         }}
-        // borderColor={getFluxNodeTypeDarkColor(data.fluxNodeType)}
+        // borderColor={getBranchesNodeTypeDarkColor(data.branchesNodeType)}
         // position="relative"
         //onMouseEnter={() => setHoveredNodeId(node.id)}
         ///onMouseLeave={() => setHoveredNodeId(null)}

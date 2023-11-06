@@ -1,4 +1,4 @@
-import { FluxNodeType } from "./types";
+import { BranchesNodeType } from "./types";
 
 export function adjustColor(color: string, amount: number) {
   return (
@@ -13,7 +13,7 @@ export function adjustColor(color: string, amount: number) {
   );
 }
 
-export function getFluxNodeColor(
+export function getBranchesNodeColor(
   isExplanation: boolean,
   isRunning: boolean,
   isTerminal: boolean,
@@ -36,6 +36,6 @@ export function getFluxNodeColor(
   return "#c5e2f6";
 }
 
-export function getFluxNodeTypeDarkColor(fluxNodeType: FluxNodeType) {
+export function getBranchesNodeTypeDarkColor(branchesNodeType: BranchesNodeType) {
   return "#619F83";
 }

@@ -4,7 +4,7 @@ import { Edge } from "reactflow";
                           CONSTRUCTORS
 //////////////////////////////////////////////////////////////*/
 
-export function newFluxEdge({
+export function newBranchesEdge({
   source,
   target,
   animated,
@@ -25,16 +25,16 @@ export function newFluxEdge({
                           TRANSFORMERS
 //////////////////////////////////////////////////////////////*/
 
-export function addFluxEdge(
+export function addBranchesEdge(
   existingEdges: Edge[],
   { source, target, animated }: { source: string; target: string; animated: boolean }
 ): Edge[] {
-  const newEdge = newFluxEdge({ source, target, animated });
+  const newEdge = newBranchesEdge({ source, target, animated });
 
   return [...existingEdges, newEdge];
 }
 
-export function modifyFluxEdge(
+export function modifyBranchesEdge(
   existingEdges: Edge[],
   { source, target, animated }: { source: string; target: string; animated: boolean }
 ): Edge[] {

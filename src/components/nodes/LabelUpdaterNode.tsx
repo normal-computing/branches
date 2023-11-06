@@ -1,6 +1,6 @@
 import { MIXPANEL_TOKEN } from "../../main";
 import { Row } from "../../utils/chakra";
-import { modifyFluxNodeLabel, modifyReactFlowNodeProperties } from "../../utils/fluxNode";
+import { modifyBranchesNodeLabel, modifyReactFlowNodeProperties } from "../../utils/branchesNode";
 import { ToTNodeData } from "../../utils/types";
 import { Box, Input, Tooltip } from "@chakra-ui/react";
 import mixpanel from "mixpanel-browser";
@@ -48,7 +48,7 @@ export function LabelUpdaterNode({
 
   const submit = () => {
     setNodes((nodes) =>
-      modifyFluxNodeLabel(nodes, {
+      modifyBranchesNodeLabel(nodes, {
         id,
         label: renameLabel,
       })

@@ -12,16 +12,16 @@ import {
   SAVED_CHAT_SIZE_LOCAL_STORAGE_KEY,
 } from "../utils/constants";
 import { useDebouncedEffect } from "../utils/debounce";
-import { newFluxEdge } from "../utils/fluxEdge";
+import { newBranchesEdge } from "../utils/branchesEdge";
 import {
-  getFluxNode,
-  newFluxNode,
-  appendTextToFluxNodeAsGPT,
-  getFluxNodeLineage,
-  modifyFluxNodeText,
+  getBranchesNode,
+  newBranchesNode,
+  appendTextToBranchesNodeAsGPT,
+  getBranchesNodeLineage,
+  modifyBranchesNodeText,
   markOnlyNodeAsSelected,
   getConnectionAllowed,
-} from "../utils/fluxNode";
+} from "../utils/branchesNode";
 import { useLocalStorage } from "../utils/lstore";
 import { getAvailableChatModels } from "../utils/models";
 import { generateNodeId, generateStreamId } from "../utils/nodeId";
@@ -34,7 +34,7 @@ import { resetURL } from "../utils/qparams";
 import { useDebouncedWindowResize } from "../utils/resize";
 import {
   ToTNodeData,
-  FluxNodeType,
+  BranchesNodeType,
   Settings,
   HumanEvalProblemsType,
 } from "../utils/types";
@@ -71,7 +71,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { yieldStream } from "yield-stream";
 import { treeDemo } from "./tree";
-import { getFluxNodeColor } from "../utils/color";
+import { getBranchesNodeColor } from "../utils/color";
 import { getEncoding, encodingForModel } from "js-tiktoken";
 
 const HUMAN_EVAL_PROBLEMS = rawHumanEvalProblems as HumanEvalProblemsType;
@@ -219,17 +219,17 @@ function App() {
     const temp = settings.temp;
     const model = settings.model;
     const parentNode = selectedNodeLineage[0];
-    const submittedNode = getFluxNode(nodes, parentNode.id)!;
+    const submittedNode = getBranchesNode(nodes, parentNode.id)!;
 
     console.log("current node", submittedNode);
 
     type SetNodes = React.Dispatch<React.SetStateAction<Node[]>>;
     type SetEdges = React.Dispatch<React.SetStateAction<Edge[]>>;
-    type FluxNodeInput = {
+    type BranchesNodeInput = {
       id?: string;
       x: number;
       y: number;
-      fluxNodeType: FluxNodeType;
+      branchesNodeType: BranchesNodeType;
       input: string;
       text: string;
       streamId?: string;
@@ -239,7 +239,7 @@ function App() {
       style: any;
       explanations: any[];
     };
-    type FluxEdgeInput = {
+    type BranchesEdgeInput = {
       source: string;
       target: string;
       animated: boolean;
@@ -247,8 +247,8 @@ function App() {
 
     const createNewNodeAndEdge = (
       currentNode: Node,
-      newFluxNode: (node: FluxNodeInput) => Node,
-      newFluxEdge: (node: FluxEdgeInput) => Edge,
+      newBranchesNode: (node: BranchesNodeInput) => Node,
+      newBranchesEdge: (node: BranchesEdgeInput) => Edge,
       setNodes: SetNodes,
       setEdges: SetEdges,
       streamId: string,
@@ -264,11 +264,11 @@ function App() {
         }
 
         // Create a new node using the currentErrors
-        const newNode = newFluxNode({
+        const newNode = newBranchesNode({
           id: currentChildNodeId,
           x: matchingNode.position.x + 10,
           y: matchingNode.position.y + 100,
-          fluxNodeType: FluxNodeType.GPT,
+          branchesNodeType: BranchesNodeType.GPT,
           input: matchingNode.data.input,
           text: "",
           streamId,
@@ -276,7 +276,7 @@ function App() {
           solutions: isSolutionNode
             ? [...matchingNode.data.solutions, ""]
             : [...matchingNode.data.solutions],
-          style: { background: getFluxNodeColor(!isSolutionNode, true, false, true, 0) },
+          style: { background: getBranchesNodeColor(!isSolutionNode, true, false, true, 0) },
           errors: [...matchingNode.data.errors],
           explanations: isSolutionNode
             ? [...matchingNode.data.explanations]
@@ -290,7 +290,7 @@ function App() {
 
       setEdges((prevEdges) => [
         ...prevEdges,
-        newFluxEdge({
+        newBranchesEdge({
           source: currentNode.id,
           target: currentChildNodeId,
           animated: true,
@@ -312,7 +312,7 @@ function App() {
             return {
               ...node,
               style: {
-                background: getFluxNodeColor(
+                background: getBranchesNodeColor(
                   isExplanation || false,
                   false,
                   node.data.isTerminal || false,
@@ -509,7 +509,7 @@ function App() {
               modifiedNode = {
                 ...node,
                 style: {
-                  background: getFluxNodeColor(
+                  background: getBranchesNodeColor(
                     isExplanation,
                     false,
                     isTerminal,
@@ -596,8 +596,8 @@ function App() {
             if (isNewNode) {
               createNewNodeAndEdge(
                 node,
-                newFluxNode,
-                newFluxEdge,
+                newBranchesNode,
+                newBranchesEdge,
                 setNodes,
                 setEdges,
                 streamId,
@@ -611,7 +611,7 @@ function App() {
             currentText += chars;
 
             setNodes((prevNodes: Node<ToTNodeData>[]) => {
-              return appendTextToFluxNodeAsGPT(
+              return appendTextToBranchesNodeAsGPT(
                 prevNodes,
                 {
                   id: currentChildNode?.id!,
@@ -679,7 +679,7 @@ function App() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const selectedNodeLineage =
-    selectedNodeId !== null ? getFluxNodeLineage(nodes, edges, selectedNodeId) : [];
+    selectedNodeId !== null ? getBranchesNodeLineage(nodes, edges, selectedNodeId) : [];
 
   /*//////////////////////////////////////////////////////////////
                         NODE MUTATION CALLBACKS
@@ -971,7 +971,7 @@ function App() {
               submitPrompt={submitPrompt}
               onPromptType={(text: string) => {
                 setNodes((nodes) =>
-                  modifyFluxNodeText(nodes, {
+                  modifyBranchesNodeText(nodes, {
                     asHuman: true,
                     id: selectedNodeId!,
                     text,
