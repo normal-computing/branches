@@ -1,81 +1,436 @@
-import { FluxNodeData, FluxNodeType, Settings } from "./types";
+import { ToTNodeData, HumanEvalProblemsType } from "./types";
 import { ChatCompletionRequestMessage } from "openai-streams";
 import { MAX_AUTOLABEL_CHARS } from "./constants";
 import { Node } from "reactflow";
+import * as nunjucks from "nunjucks";
+import rawHumanEvalProblems from "./human_eval_problems.json";
+const HUMAN_EVAL_PROBLEMS = rawHumanEvalProblems as HumanEvalProblemsType;
 
-export function messagesFromLineage(
-  lineage: Node<FluxNodeData>[],
-  settings: Settings
+export function messageFromNode(
+  currNode: Node<ToTNodeData>
 ): ChatCompletionRequestMessage[] {
   const messages: ChatCompletionRequestMessage[] = [];
 
-  // Iterate backwards.
-  for (let i = lineage.length - 1; i >= 0; i--) {
-    const node = lineage[i];
+  console.log(currNode.data.input);
+  console.log(currNode.data.output);
+  console.log(currNode.data.steps);
 
-    if (node.data.fluxNodeType === FluxNodeType.System) {
-      messages.push({
-        role: "system",
-        content: node.data.text,
-      });
-    } else if (i === lineage.length - 1) {
-      // If this is the first node and it's
-      // not a system node, we'll push the
-      // default preamble on there.
-      messages.push({
-        role: "system",
-        content: settings.defaultPreamble,
-      });
-    }
+  let currNumsStr: string;
 
-    if (node.data.fluxNodeType === FluxNodeType.User) {
-      messages.push({
-        role: "user",
-        content: node.data.text,
-      });
-    } else if (
-      node.data.fluxNodeType === FluxNodeType.TweakedGPT ||
-      node.data.fluxNodeType === FluxNodeType.GPT
-    ) {
-      messages.push({
-        role: "assistant",
-        content: node.data.text,
-      });
-    }
+  if (currNode.data.steps.length === 0) {
+    currNumsStr = currNode.data.input;
+  } else {
+    currNumsStr = getCurrentNumbers(currNode.data.steps[currNode.data.steps.length - 1]);
+    // Assuming getCurrentNumbers has been defined in TypeScript as shared before
   }
+  let prompt = proposePrompt(currNumsStr);
+  console.log("this is the prompt", prompt);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
 
   console.table(messages);
 
   return messages;
 }
 
-export function promptFromLineage(
-  lineage: Node<FluxNodeData>[],
-  settings: Settings,
-  endWithNewlines: boolean = false
-): string {
-  const messages = messagesFromLineage(lineage, settings);
+export function humanEvalMessageFromNode(
+  currNode: Node<ToTNodeData>
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
 
-  let prompt = "";
+  const prompt: string = HUMAN_EVAL_PROBLEMS[currNode.data.input]["prompt"];
+  console.log("this is the human eval prompt", prompt);
 
-  messages.forEach((message, i) => {
-    prompt += `${message.role}: ${message.content}`;
-
-    if (endWithNewlines ? true : i !== messages.length - 1) {
-      prompt += "\n\n";
-    }
+  messages.push({
+    role: "user",
+    content: prompt,
   });
 
-  return prompt;
+  console.table(messages);
+
+  return messages;
 }
+
+export function explanationMessage(
+  question: string,
+  answer: string,
+  error: string
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+  const prompt: string = error2explanation(question, answer, error);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.log("explanation message");
+  console.table(messages);
+
+  return messages;
+}
+
+export function regenMessage(
+  question: string,
+  answer: string,
+  error: string,
+  explanation: string
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+  const prompt: string = explanation2code(question, answer, error, explanation);
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.log("regen message");
+  console.table(messages);
+
+  return messages;
+}
+
+const explanation2code = (
+  question: string,
+  answer: string,
+  error: string,
+  explanation: string
+): string => {
+  return `
+    You are a smart and capable agent who can learn from mistakes. Given an incorrect code and its error traceback, correct the completion answer by incorporating the explanation. 
+    Only output the body of the completion answer.
+
+    QUESTION:
+    ----
+    ${question}
+    ----
+    ANSWER:
+    ----
+    ${answer}
+    ----
+    ERROR TRACEBACK:
+    ----
+    ${error}
+    ----
+    EXPLANATION:
+    ----
+    ${explanation}
+    ----
+    ANSWER:
+    ----
+    `;
+};
+
+const error2explanation = (question: string, answer: string, error: string): string => {
+  return `
+    You are a smart and capable agent and can learn from your mistakes. You can correctly debug and code a python program.
+    Only output the explanation of the traceback error so that you can fix the previous answer by rewriting. Do not output code.
+
+    QUESTION:
+    ----
+    ${question}
+    ----
+    ANSWER:
+    ----
+    ${answer}
+    ----
+    ERROR TRACEBACK:
+    ----
+    ${error}
+    ----
+    EXPLANATION:
+    ----
+    `;
+};
+
+export function getCurrentNumbers(val: string): string {
+  console.log("val", val);
+  const lastLine = val.trim().split("\n").pop() || "";
+  return lastLine.split("left: ").pop()?.split(")")[0] || "";
+}
+
+// PROPOSE PROMPT
+const proposePromptTemplate = `{% for example in examples %}
+Input: {{ example.input }}
+Possible next steps:
+{% for next_step in example.next_steps %}{{ next_step }}
+{% endfor %}{% endfor %}
+Provide only 4 possible next steps.
+Input: {{ input }}
+Possible next steps:
+`;
+
+const proposeExamples = [
+  {
+    input: "3 8 9",
+    next_steps: [
+      "9 / 3 = 3 (left: 3 8)",
+      "3 * 8 = 24 (left: 24 9)",
+      "9 * 3 = 27 (left: 27 8)",
+      "9 - 8 = 1 (left: 1 3)",
+    ],
+  },
+  {
+    input: "3 3 7",
+    next_steps: [
+      "3 + 7 = 10 (left: 10 3)",
+      "3 * 3 = 9 (left: 9 7)",
+      "7 - 3 = 4 (left: 4 3)",
+      "3 - 3 = 0 (left: 0 7)",
+    ],
+  },
+];
+
+// Create function to render the propose prompt by parsing the jinja
+function textPromptDecorator(fn: Function) {
+  return function (input: string, examples = proposeExamples) {
+    const renderedTemplate = nunjucks.renderString(proposePromptTemplate, {
+      input,
+      examples,
+    });
+    return fn(renderedTemplate);
+  };
+}
+
+const proposePrompt = textPromptDecorator((renderedTemplate: string) => {
+  return renderedTemplate;
+});
 
 export function formatAutoLabel(text: string) {
   const formattedText = removeInvalidChars(text);
 
   return formattedText.length > MAX_AUTOLABEL_CHARS
     ? formattedText.slice(0, MAX_AUTOLABEL_CHARS).split(" ").slice(0, -1).join(" ") +
-        " ..."
+    " ..."
     : formattedText;
+}
+
+// VALUE PROMPT
+const valuePromptTemplate = `Evaluate if given numbers can reach 24 (sure/likely/impossible)
+{% for example in examples %}
+Input: {{ example.input }}
+{% for step in example.steps %}
+{{ step }}
+{% endfor %}
+{{ example.output }}
+{% endfor %}
+Input: {{input}}
+`;
+
+const value_examples = [
+  { input: "10 14", steps: ["10 + 14 = 24"], output: "sure" },
+  {
+    input: "11 12",
+    steps: ["11 + 12 = 23", "12 - 11 = 1", "11 * 12 = 132", "11 / 12 = 0.91"],
+    output: "impossible",
+  },
+  {
+    input: "4 4 10",
+    steps: [
+      "4 + 4 + 10 = 8 + 10 = 18",
+      "4 * 10 - 4 = 40 - 4 = 36",
+      "(10 - 4) * 4 = 6 * 4 = 24",
+    ],
+    output: "sure",
+  },
+  { input: "4 9 11", steps: ["9 + 11 + 4 = 20 + 4 = 24"], output: "sure" },
+  {
+    input: "5 7 8",
+    steps: [
+      "5 + 7 + 8 = 12 + 8 = 20",
+      "(8 - 5) * 7 = 3 * 7 = 21",
+      "I cannot obtain 24 now, but numbers are within a reasonable range",
+    ],
+    output: "likely",
+  },
+  {
+    input: "5 6 6",
+    steps: [
+      "5 + 6 + 6 = 17",
+      "(6 - 5) * 6 = 1 * 6 = 6",
+      "I cannot obtain 24 now, but numbers are within a reasonable range",
+    ],
+    output: "likely",
+  },
+  {
+    input: "10 10 11",
+    steps: ["10 + 10 + 11 = 31", "(11 - 10) * 10 = 10", "10 10 10 are all too big"],
+    output: "impossible",
+  },
+  {
+    input: "1 3 3",
+    steps: ["1 * 3 * 3 = 9", "(1 + 3) * 3 = 12", "1 3 3 are all too small"],
+    output: "impossible",
+  },
+  { input: "24", steps: ["24 = 24 (solved, no steps needed)"], output: "sure" },
+];
+
+function valuePromptDecorator(fn: Function) {
+  return function (input: string, examples = value_examples) {
+    const renderedTemplate = nunjucks.renderString(valuePromptTemplate, {
+      input,
+      examples,
+    });
+    return fn(renderedTemplate);
+  };
+}
+
+const valuePrompt = valuePromptDecorator((renderedTemplate: string) => {
+  return renderedTemplate;
+});
+
+export function evalMessageFromText(text: string): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+
+  // Using cotPrompt to generate the prompt
+  const currNumsStr = getCurrentNumbers(text);
+  let prompt = valuePrompt(currNumsStr);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.table(messages);
+
+  return messages;
+}
+
+export function parseAndCompute(valueOutputs: string[]): number {
+  const valueMap: { [key: string]: number } = {
+    impossible: 0.001,
+    likely: 1,
+    sure: 20,
+  };
+
+  function computeValue(sample: string): number {
+    const valueName = sample.split("\n").slice(-1)[0];
+    return valueMap[valueName] || 0;
+  }
+
+  return valueOutputs.map(computeValue).reduce((a, b) => a + b, 0);
+}
+
+const valueLastStepPromptTemplate = `Use numbers and basic arithmetic operations (+ - * /) to obtain 24. Given an input and an answer, give a judgement (sure/impossible) if the answer is correct, i.e. it uses each input exactly once and no other numbers, and reach 24.
+{% for example in examples %}
+Input: {{ example.input }}
+Answer: {{ example.answer }}
+Judge: {{ example.judge }}
+{% endfor %}
+Input: {{input}}
+Answer: {{answer}}
+Judge:`;
+
+const value_last_step_examples = [
+  { input: "3 3 5", answer: "(5 + 3) * 3 = 24", judge: "sure" },
+  { input: "3 3 5", answer: "(3 - 3) * 5 = 24", judge: "impossible" },
+  { input: "2 5 7", answer: "(7 + 5) * 2 = 24", judge: "sure" },
+  { input: "2 5 7", answer: "(7 - 5) * 2 = 24", judge: "impossible" },
+  { input: "5 8 8", answer: "(8 + 8) - 5 = 24", judge: "impossible" },
+  { input: "5 8 8", answer: "(8 - 5) / 8 = 24", judge: "impossible" },
+];
+
+function valueLastStepPromptDecorator(fn: Function) {
+  return function (input: string, answer: string, examples = value_last_step_examples) {
+    const renderedTemplate = nunjucks.renderString(valueLastStepPromptTemplate, {
+      input,
+      answer,
+      examples,
+    });
+    return fn(renderedTemplate);
+  };
+}
+
+// COT PROMPT
+const cotPromptTemplate = `Use numbers and basic arithmetic operations (+ - * /) to obtain 24. Be sure to use numbers uniquely only once. Each step, you are only allowed to choose two of the remaining numbers to obtain a new number.
+{% for example in examples %}
+Input: {{ example.input }}
+Steps:
+{% for step in example.steps %}
+{{ step }}
+{% endfor %}
+Answer: {{ example.output }}
+{% endfor %}
+Input: {{input}}
+Steps:\n
+`;
+
+const cot_examples = [
+  {
+    input: "3 3 5",
+    steps: ["3 + 5 = 8 (left: 8 3)", "8 * 3 = 24 (left: 24)"],
+    output: "(3 + 5) * 3 = 24",
+  },
+  {
+    input: "3 8 9",
+    steps: ["9 / 3 = 3 (left: 3 8)", "3 * 8 = 24 (left: 24)"],
+    output: "(9 / 3) * 8 = 24",
+  },
+  {
+    input: "5 8 8",
+    steps: ["8 - 5 = 3 (left: 3 8)", "3 * 8 = 24 (left: 24)"],
+    output: "(8 - 5) * 3 = 24",
+  },
+  {
+    input: "3 3 9",
+    steps: ["9 * 3 = 27 (left: 27 3)", "27 - 3 = 24 (left: 24)"],
+    output: "(9 * 3) - 3 = 24",
+  },
+  {
+    input: "2 5 7",
+    steps: ["7 + 5 = 12 (left: 12 2)", "12 * 2 = 24 (left: 24)"],
+    output: "(7 + 5) * 2 = 24",
+  },
+];
+
+type RenderFunction = (template: string) => string;
+// Create function to render the cot prompt by parsing the jinja
+function cotPromptDecorator(fn: RenderFunction): RenderFunction {
+  type Example = {
+    input: string;
+    steps: string[];
+    output: string;
+  };
+
+  return function (input: string, examples: Example[] = cot_examples): string {
+    const renderedTemplate = nunjucks.renderString(cotPromptTemplate, {
+      input,
+      examples,
+    });
+    return fn(renderedTemplate);
+  };
+}
+
+const cotPrompt = cotPromptDecorator((renderedTemplate: string) => {
+  return renderedTemplate;
+});
+
+export function cotMessageFromNode(
+  currNode: Node<ToTNodeData>,
+  text: string
+): ChatCompletionRequestMessage[] {
+  const messages: ChatCompletionRequestMessage[] = [];
+
+  // Using cotPrompt to generate the prompt
+  let prompt =
+    cotPrompt(currNode.data.input) +
+    currNode.data.steps.slice(0, -1).join("\n") +
+    "\n" +
+    text;
+
+  console.log("this is text for answer prompt", text);
+  console.log("this is answer prompt", prompt);
+
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+
+  console.table(messages);
+
+  return messages;
 }
 
 function removeInvalidChars(text: string) {
@@ -84,7 +439,7 @@ function removeInvalidChars(text: string) {
   // a-zA-Z0-9: letters and numbers
   // .,?!: common punctuation marks
   // \s: whitespace characters (space, tab, newline, etc.)
-  const regex = /[^a-zA-Z0-9.,'?!-\s]+/g;
+  const regex = /[^a-zA-Z0-9.,'?!-\s+=*\/<>():%_{}[\]&|^~@;#$]+/g;
 
   // Replace `\n` with spaces and remove invalid characters
   const cleanedStr = text.replaceAll("\n", " ").replace(regex, "");
