@@ -378,8 +378,7 @@ function App() {
       console.log("node solution text", solutionText);
       console.log("data", JSON.stringify(data));
 
-      // Sending a POST request to the server
-      let url = "/api/execute"; // Replace with your server's URL
+      let url = "/execute";
       let response = await fetch(url, {
         method: "POST",
         headers: {
